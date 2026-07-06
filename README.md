@@ -233,24 +233,41 @@ Ajanlarımızın portföy verilerine dinamik olarak erişebilmesi için backend 
 ### 2. Daily Scrum (Günlük Toplantı Notları)
 
 #### Gün 1
-* **Dün Neler Yapıldı:** Proje deposu oluşturuldu, yerel dizinler hazırlandı.
-* **Bugün Neler Yapılacak:** Docker Compose altyapısı (PostgreSQL, Backend, Frontend, Nginx) ayağa kaldırılacak, veritabanı modelleri ve migration'lar tanımlanacak. JWT tabanlı kullanıcı kayıt/giriş sistemi geliştirilecek.
-* **Engelleyici Faktörler (Blocker):** Yok.
+
+![Daily Scrum Gün 1](ProjectManagement/Sprint1Documents/daily_scrum_day1.png)
+
+* **Cevahir Atıcı:** selam arkadaşlar, haftanın ilk Daily Scrum'ı. Bugün hızlıca dün ne yaptık, bugün ne yapacağımız ve bir engelimiz var mı konuşalım. Halit, seninle başlayalım.
+* **Halit:** Selamlar. Dün portföy özet ekranının ve genel sayfa yapısının tasarımlarını bitirdim. Bugün DashboardPage.jsx grafik entegrasyonuna başlayacağım. Furkan'dan AI veri yapısını bekliyorum.
+* **Cavit Furkan Tekeli:** Selamlar. Dün yapay zeka analiz servisinin temel yapısını (ai_service.py) kurmuştum. Bugün bu servis ile frontend arasındaki köprüyü kurmak için ai.js API entegrasyon dosyalarını yazacağım. Halit'e veri şemasını bugün iletirim.
+* **Halit:** Süper Furkan, şemayı alınca ben de grafik veri bağlama işini bugün tamamlamış olurum.
+* **Cevahir Atıcı:** Ben de dün test ortamını kurup API test şablonlarını hazırlamıştım. Bugün siz entegrasyonları bitirince otomasyon test senaryolarını yazmaya başlayacağım. Furkan, şemayı bana da iletirsen sevinirim.
+* **Cavit Furkan Tekeli:** Tabii ki Cevahir, Slack üzerinden ikinize de ileteceğim. Başka bir engelim yok.
+* **Cevahir Atıcı:** Tamamdır, o zaman bugünü planladığımız gibi kapatıyoruz. Kolay gelsin.
 
 #### Gün 2
-* **Dün Neler Yapıldı:** Altyapı, veritabanı şeması ve kullanıcı yönetim sistemi tamamlandı.
-* **Bugün Neler Yapılacak:** yfinance entegrasyonu yapılacak. Portföy CRUD (ekleme, silme, güncelleme) endpoint'leri yazılacak, alım-satım işlem kayıtları (Transaction) ve kâr/zarar (realized/unrealized P&L) hesaplama motoru geliştirilecek.
-* **Engelleyici Faktörler (Blocker):** Yok.
+
+![Daily Scrum Gün 2](ProjectManagement/Sprint1Documents/daily_scrum_day2.png)
+
+* **Cevahir Atıcı:** Günaydın ekip. Dün entegrasyonları tamamladık sanırım. Durumlar nasıl gidiyor, herhangi bir engel var mı?
+* **Halit:** Günaydın. Dün grafikleri entegre ettim fakat AI verisi backend'den geç geldiği için dashboard ilk açılışta 4-5 saniye donuyor. Bugün geçici bir loading spinner ekleyeceğim ama Furkan ile backend tarafındaki bu yavaşlığı çözmemiz lazım.
+* **Cavit Furkan Tekeli:** Selamlar. Sorunu fark ettim, dış yapay zeka API'sinin yanıt süresi çok dalgalı. Bugün ai_service.py üzerinde Redis tabanlı bir önbellekleme mekanizması kuracağım. Böylece tekrarlanan isteklerde direkt cache'ten hızlıca döneceğiz.
+* **Cevahir Atıcı:** Ben de dün hazırladığım otomasyon testlerini koştururken bu yavaşlık yüzünden timeout hataları aldım. Furkan cache uygulamasını bitirdikten sonra performans testlerini tekrar çalıştıracağım.
+* **Halit:** Tamamdır Furkan, sen cache işini bitirip local'e attığında bana haber ver ki ben de donma durumunu arayüzde tekrar test edeyim.
+* **Cavit Furkan Tekeli:** Gün içinde local'de test edilebilir hale getirip sana haber veririm Halit.
+* **Cevahir Atıcı:** iyiii, o zaman bugün odak noktamız bu gecikme problemini çözmek. Kolay gelsin herkese. 🤯
 
 #### Gün 3
-* **Dün Neler Yapıldı:** Portföy yönetimi ve işlem kayıt backend motoru tamamlandı.
-* **Bugün Neler Yapılacak:** Vite + React 19 ile frontend arayüzleri tasarlanacak. Dashboard, portföy ekranı, işlemler sayfası oluşturulacak ve ApexCharts ile candlestick/dağılım grafikleri entegre edilecek.
-* **Engelleyici Faktörler (Blocker):** Yok.
 
-#### Gün 4
-* **Dün Neler Yapıldı:** Frontend arayüzü ve grafik entegrasyonları tamamlandı.
-* **Bugün Neler Yapılacak:** Google Gemini entegrasyonu yapılarak; Portföy Analisti, Risk Yöneticisi ve Haber Duyarlılık uzman ajanları içeren Multi-Agent orkestrasyon sistemi, konuşma geçmişi (Memory) ve RSS haber sentiment analizi eklenerek proje tamamlanacak.
-* **Engelleyici Faktörler (Blocker):** Yok.
+![Daily Scrum Gün 3](ProjectManagement/Sprint1Documents/daily_scrum_day3.png)
+
+* **Cevahir Atıcı:** selam herkese, demo gününden önceki son Daily Scrum. Dünkü performans sıkıntısını giderebildik mi? naptık
+* **Cavit Furkan Tekeli:** Selamlar. Evet, dün ai_service.py önbelleklemesini tamamladım. İstek süresini 4 saniyeden 200 milisaniyelere kadar düşürdük. Kodları test edip main branch'e gönderdim. Benim görevlerim bitti.
+* **Halit:** Merhabaa. Ben de Furkan'ın güncellemesinden sonra arayüz testlerini yaptım. Donma sorunu tamamen çözüldü, ayrıca ilk yükleme için şık bir skeleton ekranı ekledim. Bugün sadece son görsel rötuşları yapacağım, demoya hazırım.
+* **Cevahir Atıcı:** Elinize sağlık. Ben de yeni servis testlerini koşturdum ve hepsi başarıyla geçti. Bugün son regresyon testlerini tamamlayıp demo ortamını hazırlayacağım.
+* **Halit:** Çok iyi. Sunum sırasında ekran paylaşımını ben yapabilirim isterseniz, lokalimde her şey hazır.
+* **Cavit Furkan Tekeli:** Benim için uygun Halit, ben de arka planda olası bir hata durumuna karşı canlı logları takip ediyor olurum.
+* **Cevahir Atıcı:** Süper olur. Testler de temiz olduğuna göre yarınki demoda bir sorun yaşayacağımızı sanmıyorum. yarın görüşmek üzere!
+* **Cavit Furkan Tekeli:** Görüşürüzz 🙋‍♂️
 
 ### 3. Sprint Board SS
 Aşağıda Sprint 1 sonundaki tamamlanmış Sprint Board (Scrum Board) yer almaktadır:
