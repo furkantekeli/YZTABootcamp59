@@ -9,6 +9,8 @@ import TransactionsPage from './pages/TransactionsPage';
 import AnalysisPage from './pages/AnalysisPage';
 import AiInsightsPage from './pages/AiInsightsPage';
 import NewsPage from './pages/NewsPage';
+import WatchlistPage from './pages/WatchlistPage';
+import AlertsPage from './pages/AlertsPage';
 import Toast from './components/common/Toast';
 
 function ProtectedRoute({ children }) {
@@ -68,6 +70,8 @@ export default function App() {
           <Route path="analysis" element={<AnalysisPage />} />
           <Route path="ai-insights" element={<AiInsightsPage />} />
           <Route path="news" element={<NewsPage />} />
+          <Route path="watchlist" element={<WatchlistPage />} />
+          <Route path="alerts" element={<AlertsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

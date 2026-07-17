@@ -9,6 +9,8 @@ import {
   ChevronLeft,
   ChevronRight,
   TrendingUp,
+  Bell,
+  Eye,
 } from 'lucide-react';
 import { useUiStore } from '../../store/uiStore';
 import { useAuthStore } from '../../store/authStore';
@@ -21,6 +23,8 @@ const navItems = [
   { path: '/analysis', label: 'Analiz', icon: BarChart3 },
   { path: '/ai-insights', label: 'AI Yorumları', icon: Bot },
   { path: '/news', label: 'Haberler', icon: Newspaper },
+  { path: '/watchlist', label: 'İzleme Listesi', icon: Eye },
+  { path: '/alerts', label: 'Fiyat Alarmları', icon: Bell },
 ];
 
 export default function Sidebar() {
