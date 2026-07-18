@@ -9,7 +9,7 @@ import usePortfolioStore from '../../store/portfolioStore';
 import useUiStore from '../../store/uiStore';
 import './AddStockModal.css';
 
-export default function AddStockModal({ isOpen, onClose, portfolioId }) {
+export default function AddStockModal({ isOpen, onClose, portfolioId, initialStock }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -22,6 +22,16 @@ export default function AddStockModal({ isOpen, onClose, portfolioId }) {
   const { addStock } = usePortfolioStore();
   const { addToast } = useUiStore();
   const searchTimeoutRef = useRef(null);
+
+  // Set initial stock if passed
+  useEffect(() => {
+    if (isOpen && initialStock) {
+      handleSelectStock(initialStock);
+    } else if (!isOpen) {
+      setSelectedStock(null);
+      setSearchQuery('');
+    }
+  }, [isOpen, initialStock]);
 
   // Debounced search
   useEffect(() => {
@@ -189,11 +199,12 @@ export default function AddStockModal({ isOpen, onClose, portfolioId }) {
                   onChange={(e) => setCurrency(e.target.value)}
                   className="common-select"
                   required
+                  style={{ backgroundColor: '#1a1f2e', color: '#f1f5f9' }}
                 >
-                  <option value="TRY">TRY (₺)</option>
-                  <option value="USD">USD ($)</option>
-                  <option value="EUR">EUR (€)</option>
-                  <option value="GBP">GBP (£)</option>
+                  <option value="TRY" style={{ background: '#1a1f2e', color: '#f1f5f9' }}>TRY (₺)</option>
+                  <option value="USD" style={{ background: '#1a1f2e', color: '#f1f5f9' }}>USD ($)</option>
+                  <option value="EUR" style={{ background: '#1a1f2e', color: '#f1f5f9' }}>EUR (€)</option>
+                  <option value="GBP" style={{ background: '#1a1f2e', color: '#f1f5f9' }}>GBP (£)</option>
                 </select>
               </div>
             </div>

@@ -68,6 +68,42 @@ CREATE TABLE IF NOT EXISTS ai_analyses (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- ─── Price Alerts Table ─────────────────────────────────────
+CREATE TABLE IF NOT EXISTS price_alerts (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    symbol VARCHAR(20) NOT NULL,
+    name VARCHAR(200),
+    target_price DECIMAL(15, 4) NOT NULL,
+    alert_type VARCHAR(10) NOT NULL CHECK (alert_type IN ('ABOVE', 'BELOW')),
+    is_triggered BOOLEAN DEFAULT FALSE,
+    is_active BOOLEAN DEFAULT TRUE,
+    triggered_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ─── Watchlist Items Table ──────────────────────────────────
+CREATE TABLE IF NOT EXISTS watchlist_items (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    symbol VARCHAR(20) NOT NULL,
+    name VARCHAR(200),
+    exchange VARCHAR(50),
+    currency VARCHAR(10) DEFAULT 'USD',
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, symbol)
+);
+
+-- ─── Portfolio Snapshots Table ──────────────────────────────
+CREATE TABLE IF NOT EXISTS portfolio_snapshots (
+    id SERIAL PRIMARY KEY,
+    portfolio_id INTEGER NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
+    total_value DECIMAL(15, 4) NOT NULL,
+    total_cost DECIMAL(15, 4) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- ─── Indexes ────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_portfolios_user_id ON portfolios(user_id);
 CREATE INDEX IF NOT EXISTS idx_portfolio_stocks_portfolio_id ON portfolio_stocks(portfolio_id);
@@ -75,6 +111,10 @@ CREATE INDEX IF NOT EXISTS idx_portfolio_stocks_symbol ON portfolio_stocks(symbo
 CREATE INDEX IF NOT EXISTS idx_transactions_portfolio_stock_id ON transactions(portfolio_stock_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(transaction_date);
 CREATE INDEX IF NOT EXISTS idx_ai_analyses_portfolio_id ON ai_analyses(portfolio_id);
+CREATE INDEX IF NOT EXISTS idx_price_alerts_user_id ON price_alerts(user_id);
+CREATE INDEX IF NOT EXISTS idx_price_alerts_symbol ON price_alerts(symbol);
+CREATE INDEX IF NOT EXISTS idx_watchlist_items_user_id ON watchlist_items(user_id);
+CREATE INDEX IF NOT EXISTS idx_portfolio_snapshots_portfolio_id ON portfolio_snapshots(portfolio_id);
 
 -- ─── Updated At Trigger Function ────────────────────────────
 CREATE OR REPLACE FUNCTION update_updated_at_column()

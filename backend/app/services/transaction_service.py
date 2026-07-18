@@ -14,6 +14,7 @@ from app.models.portfolio import Portfolio
 from app.models.user import User
 from app.schemas.transaction import TransactionCreate, TransactionResponse
 from app.utils.calculations import calculate_weighted_avg_cost, calculate_realized_pnl
+from app.services import analysis_service
 
 
 async def get_portfolio_transactions(
@@ -123,6 +124,12 @@ async def add_transaction(
     # Recalculate position
     await _recalculate_position(stock, db)
 
+    # Trigger portfolio snapshot creation
+    try:
+        await analysis_service.create_portfolio_snapshot(portfolio_id, user, db)
+    except Exception:
+        pass
+
     await db.refresh(transaction)
     return TransactionResponse.model_validate(transaction)
 
@@ -178,6 +185,12 @@ async def delete_transaction(
 
     # Recalculate position
     await _recalculate_position(stock, db)
+
+    # Trigger portfolio snapshot creation
+    try:
+        await analysis_service.create_portfolio_snapshot(stock.portfolio_id, user, db)
+    except Exception:
+        pass
 
     return {"message": "İşlem başarıyla silindi."}
 

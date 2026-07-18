@@ -7,6 +7,7 @@ All AI responses are in Turkish.
 from datetime import datetime, timezone
 import json
 import asyncio
+import yfinance as yf
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from fastapi import HTTPException, status
@@ -465,3 +466,486 @@ async def _generate_response(model: genai.GenerativeModel, prompt: str) -> str:
         return response.text
 
     raise ValueError("Yapay zekadan yanıt alınamadı.")
+
+
+async def _build_chat_prompt(
+    portfolio_id: int, question: str, user: User, db: AsyncSession
+) -> tuple[Portfolio, str]:
+    """
+    Build a full chat prompt with portfolio context, memory, and tool-calling data.
+    Returns (portfolio, prompt_string).
+    """
+    portfolio, stocks, context = await _build_portfolio_context(portfolio_id, user, db)
+
+    # Retrieve previous conversation memory
+    chat_history = await _get_chat_history(portfolio_id, db, limit=4)
+
+    # Simulating tools: fetch metrics if the user is asking about returns, allocations, or risk
+    additional_data = ""
+    question_lower = question.lower()
+    if any(x in question_lower for x in ["risk", "volatilite", "sharpe", "oynak", "kayıp"]):
+        risk_metrics = await analysis_service.get_risk_metrics(portfolio_id, user, db)
+        additional_data = f"\nİlgili Risk Metrikleri: {json.dumps(risk_metrics, ensure_ascii=False)}"
+    elif any(x in question_lower for x in ["dağılım", "sektör", "oran", "yüzde"]):
+        allocation = await analysis_service.get_allocation(portfolio_id, user, db)
+        additional_data = f"\nİlgili Dağılım Metrikleri: {json.dumps(allocation, ensure_ascii=False)}"
+    elif any(x in question_lower for x in ["kar", "zarar", "maliyet", "pnl", "performans"]):
+        perf_metrics = await analysis_service.get_performance_metrics(portfolio_id, user, db)
+        additional_data = f"\nİlgili Performans Metrikleri: {json.dumps(perf_metrics, ensure_ascii=False)}"
+
+    prompt = f"""Sen kullanıcının kişisel yatırım asistanısın. Kullanıcının portföyü hakkındaki sorusunu yanıtla.
+
+{context}
+{additional_data}
+
+SOHBET GEÇMİŞİ (HAFIZA):
+{chat_history}
+
+KULLANICININ YENİ SORUSU:
+{question}
+
+Lütfen bu soruya yanıt verirken:
+- Varsa sohbet geçmişindeki bağlamı göz önünde bulundur.
+- Portföyün güncel durumunu ve hisse senedi detaylarını temel alarak somut rakamlar ve yüzdeler kullan.
+- Türkçe, kibar, profesyonel ve finansal okuryazarlığı destekleyen bir tonda yanıt yaz.
+- Yatırım tavsiyesi olmadığını hatırlatacak profesyonel duruşu koru."""
+
+    return portfolio, prompt
+
+
+async def chat_stream(
+    portfolio_id: int, question: str, user: User, db: AsyncSession
+):
+    """
+    Streaming chat: yields text chunks as they arrive from Gemini.
+    After streaming is complete, saves the full response to the database.
+    """
+    portfolio, prompt = await _build_chat_prompt(portfolio_id, question, user, db)
+    model = _get_model()
+
+    full_response = ""
+
+    try:
+        # Generate the streaming response in a thread (returns a synchronous iterator)
+        response_stream = await asyncio.to_thread(
+            lambda: model.generate_content(prompt, stream=True)
+        )
+
+        # Collect all chunks from the synchronous iterator in a thread
+        def _collect_chunks():
+            chunks = []
+            for chunk in response_stream:
+                if chunk.text:
+                    chunks.append(chunk.text)
+            return chunks
+
+        chunks = await asyncio.to_thread(_collect_chunks)
+
+        for chunk_text in chunks:
+            full_response += chunk_text
+            yield chunk_text
+            await asyncio.sleep(0)  # Yield control to event loop
+
+    except Exception as e:
+        error_msg = f"Yapay zeka yanıtı alınırken hata oluştu: {str(e)}"
+        yield error_msg
+        full_response = error_msg
+
+    # Save the complete response to database
+    if full_response:
+        analysis = AiAnalysis(
+            portfolio_id=portfolio.id,
+            analysis_type="chat",
+            prompt=prompt,
+            response=full_response,
+        )
+        db.add(analysis)
+        await db.commit()
+
+
+class SimulationAgent:
+    """
+    Agent responsible for running hypothetic What-If simulations on the portfolio risk profile.
+    """
+    def __init__(self, model: genai.GenerativeModel):
+        self.model = model
+
+    async def run(self, context: str, current_risk: dict, simulated_risk: dict, added_stock_info: dict) -> str:
+        prompt = f"""Sen uzman bir **Risk Simülasyon Ajanı ve Finansal Mühendissin**.
+Aşağıda kullanıcının mevcut portföy bağlamı ve mevcut risk metrikleri yer almaktadır:
+
+PORTFÖY BAĞLAMI:
+{context}
+
+MEVCUT RİSK METRİKLERİ:
+{json.dumps(current_risk, ensure_ascii=False)}
+
+Yatırımcı portföyüne şu hisseyi sanal olarak eklemek istiyor (Hipotetik "What-If" Simülasyonu):
+Eklenecek Hisse: {added_stock_info['symbol']}
+Miktar (Lot): {added_stock_info['lots']}
+Birim Fiyat: {added_stock_info['price']}
+
+Bu hisse eklendikten sonra simüle edilen yeni portföy risk metrikleri şu şekilde hesaplanmıştır:
+SİMÜLE EDİLEN YENİ RİSK METRİKLERİ:
+{json.dumps(simulated_risk, ensure_ascii=False)}
+
+Lütfen bu veriler doğrultusunda yatırımcıya simülasyon sonuçlarını yorumlayan detaylı ve anlaşılır bir **Simülasyon Raporu** hazırla:
+1. **Risk Profilindeki Değişim**: Volatilite ve Sharpe oranındaki artış/azalış portföyü nasıl etkiler? Risk seviyesi (Düşük/Orta/Yüksek) değişti mi?
+2. **Çeşitlendirme Etkisi**: Yeni eklenen hisse portföyün konsantrasyonunu azalttı mı yoksa aşırı yığılmaya mı neden oldu? (Çeşitlendirme skorundaki değişimi yorumla)
+3. **Stratejik Karar Tavsiyesi**: Yatırımcı bu hisseyi gerçekten portföyüne eklemeli mi? Risk/getiri dengesi açısından avantajlı mı?
+
+Yanıtını Türkçe, son derece profesyonel, uygulanabilir ve anlaşılır maddeler halinde yaz."""
+        return await _generate_response(self.model, prompt)
+
+
+async def simulate_what_if(
+    portfolio_id: int, 
+    symbol: str, 
+    lots: float, 
+    price: float, 
+    user: User, 
+    db: AsyncSession
+) -> dict:
+    """
+    Simulate adding a new stock to the portfolio and calculate the change in risk metrics.
+    Runs the SimulationAgent to synthesize an AI recommendation report.
+    """
+    portfolio, stocks, context = await _build_portfolio_context(portfolio_id, user, db)
+    model = _get_model()
+
+    current_risk = await analysis_service.get_risk_metrics(portfolio_id, user, db)
+
+    symbol_upper = symbol.upper().strip()
+    
+    # Simulate weights
+    total_val = 0.0
+    weights_dict = {}
+    for stock in stocks:
+        if stock.total_lots <= 0:
+            continue
+        cur_p = stock.current_price or stock.avg_cost or 1.0
+        v = stock.total_lots * cur_p
+        total_val += v
+        weights_dict[stock.symbol] = v
+
+    # Add simulated stock
+    sim_val = lots * price
+    total_val += sim_val
+    weights_dict[symbol_upper] = weights_dict.get(symbol_upper, 0.0) + sim_val
+
+    # Div by zero guard for weights
+    if total_val <= 0:
+        total_val = 1.0
+        weights_dict = {symbol_upper: 1.0}
+
+    # Normalize weights
+    simulated_weights = [v / total_val for v in weights_dict.values()]
+
+    # Fetch price history for the simulated stock
+    sim_closes = []
+    try:
+        ticker = await asyncio.to_thread(lambda s=symbol_upper: yf.Ticker(s))
+        hist = await asyncio.to_thread(lambda t=ticker: t.history(period="1y"))
+        sim_closes = hist["Close"].tolist() if not hist.empty else []
+    except Exception:
+        pass
+
+    # Fail-safe simulated closes if yfinance fails
+    if not sim_closes:
+        sim_closes = [price] * 20
+
+    # Fetch current stock histories to re-calculate portfolio volatility
+    stock_histories = {}
+    async def _fetch_history(sym: str):
+        try:
+            t = await asyncio.to_thread(lambda s=sym: yf.Ticker(s))
+            h = await asyncio.to_thread(lambda t=t: t.history(period="1y"))
+            return sym, h["Close"].tolist() if not h.empty else []
+        except Exception:
+            return sym, []
+
+    tasks = [_fetch_history(s.symbol) for s in stocks if s.total_lots > 0]
+    if tasks:
+        hist_results = await asyncio.gather(*tasks)
+        for sym, closes in hist_results:
+            stock_histories[sym] = closes if closes else [1.0] * 20
+    
+    stock_histories[symbol_upper] = sim_closes
+
+    # Re-calculate simulated volatility and Sharpe ratio
+    sim_volatilities = []
+    for sym, closes in stock_histories.items():
+        vol = analysis_service.calculate_volatility(closes)
+        sim_volatilities.append(vol)
+
+    # Simulated portfolio volatility
+    sim_portfolio_vol = 0.0
+    for idx, (sym, w) in enumerate(weights_dict.items()):
+        if idx < len(sim_volatilities):
+            sim_portfolio_vol += sim_volatilities[idx] * (w / total_val)
+        else:
+            sim_portfolio_vol += 15.0 * (w / total_val)  # Default fall-back volatility
+
+    # Simulated Sharpe ratio
+    sim_returns = []
+    non_empty_histories = [v for v in stock_histories.values() if len(v) > 1]
+    min_len = min(len(v) for v in non_empty_histories) if non_empty_histories else 0
+    if min_len > 1:
+        for i in range(1, min_len):
+            daily_return = 0.0
+            for idx, (sym, w) in enumerate(weights_dict.items()):
+                closes = stock_histories.get(sym, [])
+                if len(closes) > i and closes[i - 1] > 0:
+                    ret = (closes[i] - closes[i - 1]) / closes[i - 1]
+                    daily_return += ret * (w / total_val)
+            sim_returns.append(daily_return)
+
+    sim_sharpe = analysis_service.calculate_sharpe_ratio(sim_returns) if sim_returns else 0.0
+    sim_div_score = analysis_service.calculate_diversification_score(simulated_weights)
+
+    # Construct final simulated metrics dictionary
+    simulated_metrics = {
+        "volatility": round(sim_portfolio_vol, 2),
+        "sharpe_ratio": round(sim_sharpe, 2),
+        "diversification_score": round(sim_div_score, 2),
+        "risk_level": "Düşük" if sim_portfolio_vol < 15 else "Orta" if sim_portfolio_vol < 30 else "Yüksek"
+    }
+
+    # Run AI SimulationAgent for recommendations
+    sim_agent = SimulationAgent(model)
+    added_stock_info = {"symbol": symbol_upper, "lots": lots, "price": price}
+    
+    ai_report = await sim_agent.run(context, current_risk, simulated_metrics, added_stock_info)
+
+    # Save simulation to DB
+    analysis = AiAnalysis(
+        portfolio_id=portfolio.id,
+        analysis_type="simulation",
+        prompt=f"WHAT-IF SIMULATION: {symbol_upper} ({lots} lot @ {price})",
+        response=ai_report,
+    )
+    db.add(analysis)
+    await db.commit()
+
+    return {
+        "current_metrics": current_risk,
+        "simulated_metrics": simulated_metrics,
+        "ai_report": ai_report
+    }
+
+
+class RebalancingAgent:
+    """
+    Agent responsible for analyzing deviations from the target ideal equal allocation weights
+    and providing clear portfolio optimization recommendations.
+    """
+    def __init__(self, model: genai.GenerativeModel):
+        self.model = model
+
+    async def run(self, context: str, rebalancing_trades: list) -> str:
+        prompt = f"""Sen uzman bir **Portföy Optimizasyon Ajanı ve Finansal Danışmansın**.
+Aşağıda kullanıcının mevcut portföy bağlamı ve ideal eşit dağılıma (Equal Weighting) ulaşmak için yapılması gereken matematiksel işlemler yer almaktadır:
+
+PORTFÖY BAĞLAMI:
+{context}
+
+MATEMATİKSEL DENGELEME İŞLEMLERİ (REBALANCING):
+{json.dumps(rebalancing_trades, ensure_ascii=False)}
+
+Lütfen bu veriler doğrultusunda yatırımcıya dengeli bir yol haritası sun:
+1. **Dengenin Bozulduğu Noktalar**: Ağırlığı idealin çok üzerine çıkmış (aşırı konsantre) veya çok altında kalmış hisseler hangileri?
+2. **Rebalancing Önerileri**: Hangi hisseden ne kadarlık satım yapılmalı, hangi hisseye ne kadarlık ekleme yapılmalı? (Yukarıdaki matematiksel alım/satım önerilerini yorumlayarak açıkla)
+3. **Optimizasyonun Faydası**: Bu rebalancing işlemi yapıldıktan sonra portföyün risk profilindeki (oynaklığın azalması, Sharpe oranının artması vb.) olası iyileşmeler.
+
+Tavsiyelerini Türkçe, son derece profesyonel, uygulanabilir ve anlaşılır maddeler halinde yaz."""
+        return await _generate_response(self.model, prompt)
+
+
+async def rebalance(portfolio_id: int, user: User, db: AsyncSession) -> dict:
+    """
+    Calculate deviations from equal weight allocation and return rebalancing recommendations
+    together with AI agent analysis report.
+    """
+    portfolio, stocks, context = await _build_portfolio_context(portfolio_id, user, db)
+    model = _get_model()
+
+    if not stocks:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Rebalancing analizi için portföyde en az 1 hisse senedi bulunmalıdır."
+        )
+
+    # Calculate total value and target allocation
+    total_val = 0.0
+    stock_values = {}
+    for s in stocks:
+        price = s.current_price or s.avg_cost or 1.0
+        val = s.total_lots * price
+        total_val += val
+        stock_values[s.symbol] = val
+
+    if total_val <= 0:
+        total_val = 1.0
+
+    num_stocks = len(stocks)
+    target_pct = round(100.0 / num_stocks, 2)
+    target_val_per_stock = total_val / num_stocks
+
+    rebalancing_trades = []
+    for s in stocks:
+        current_val = stock_values.get(s.symbol, 0.0)
+        current_pct = round((current_val / total_val) * 100, 2)
+        deviation_val = target_val_per_stock - current_val
+        deviation_pct = round(target_pct - current_pct, 2)
+        
+        price = s.current_price or s.avg_cost or 1.0
+        trade_lots = deviation_val / price
+        
+        rebalancing_trades.append({
+            "symbol": s.symbol,
+            "name": s.name or "Bilinmeyen Şirket",
+            "current_price": round(price, 2),
+            "current_lots": float(s.total_lots),
+            "current_value": round(current_val, 2),
+            "current_weight_pct": current_pct,
+            "target_weight_pct": target_pct,
+            "deviation_weight_pct": deviation_pct,
+            "action": "AL" if deviation_val > 0 else "SAT" if deviation_val < 0 else "TUT",
+            "suggested_lots": round(abs(trade_lots), 2),
+            "suggested_value": round(abs(deviation_val), 2)
+        })
+
+    # Run AI Rebalancing Agent
+    rebalance_agent = RebalancingAgent(model)
+    ai_report = await rebalance_agent.run(context, rebalancing_trades)
+
+    # Save to database
+    analysis = AiAnalysis(
+        portfolio_id=portfolio.id,
+        analysis_type="rebalance",
+        prompt=f"PORTFOLIO REBALANCING OPTIMIZATION ({num_stocks} assets)",
+        response=ai_report,
+    )
+    db.add(analysis)
+    await db.commit()
+
+    return {
+        "target_allocation_pct": target_pct,
+        "rebalancing_trades": rebalancing_trades,
+        "ai_report": ai_report
+    }
+
+
+async def get_historical_reports(
+    portfolio_id: int, user: User, db: AsyncSession
+) -> list:
+    """
+    Retrieve historical AI analyses generated for a portfolio.
+    """
+    # Verify portfolio ownership
+    result = await db.execute(
+        select(Portfolio).where(Portfolio.id == portfolio_id, Portfolio.user_id == user.id)
+    )
+    portfolio = result.scalar_one_or_none()
+    if not portfolio:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Portföy bulunamadı."
+        )
+
+    result = await db.execute(
+        select(AiAnalysis)
+        .where(AiAnalysis.portfolio_id == portfolio_id)
+        .order_by(desc(AiAnalysis.created_at))
+    )
+    analyses = result.scalars().all()
+    
+    return [
+        {
+            "id": a.id,
+            "portfolio_id": a.portfolio_id,
+            "analysis_type": a.analysis_type,
+            "response": a.response,
+            "created_at": a.created_at
+        } for a in analyses
+    ]
+
+
+async def compare_reports(
+    portfolio_id: int, report_one_id: int, report_two_id: int, user: User, db: AsyncSession
+) -> dict:
+    """
+    Compare two historical AI reports using a specialized delta-analysis prompt.
+    """
+    # Verify portfolio ownership
+    result = await db.execute(
+        select(Portfolio).where(Portfolio.id == portfolio_id, Portfolio.user_id == user.id)
+    )
+    portfolio = result.scalar_one_or_none()
+    if not portfolio:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Portföy bulunamadı."
+        )
+
+    # Fetch the two reports
+    res1 = await db.execute(select(AiAnalysis).where(AiAnalysis.id == report_one_id, AiAnalysis.portfolio_id == portfolio_id))
+    r1 = res1.scalar_one_or_none()
+
+    res2 = await db.execute(select(AiAnalysis).where(AiAnalysis.id == report_two_id, AiAnalysis.portfolio_id == portfolio_id))
+    r2 = res2.scalar_one_or_none()
+
+    if not r1 or not r2:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Karşılaştırma için seçilen raporlar bulunamadı."
+        )
+
+    model = _get_model()
+
+    prompt = f"""Sen deneyimli bir **Finansal Denetçi ve Yatırım Stratejistisin**.
+Aşağıda aynı portföy için farklı tarihlerde oluşturulmuş iki farklı yapay zekâ analiz raporu bulunmaktadır:
+
+[RAPOR 1 (Tarih: {r1.created_at.strftime('%d.%m.%Y %H:%M')}, Tip: {r1.analysis_type})]
+{r1.response}
+
+---
+
+[RAPOR 2 (Tarih: {r2.created_at.strftime('%d.%m.%Y %H:%M')}, Tip: {r2.analysis_type})]
+{r2.response}
+
+---
+
+Lütfen bu iki raporu ve aralarındaki süreç farkını analiz ederek yatırımcıya özel bir **AI Karşılaştırmalı Gelişim ve İlerleme Raporu** oluştur:
+1. **Yapılan İlerlemeler**: Rapor 1'den Rapor 2'ye geçerken portföy kompozisyonunda, risk seviyelerinde veya rasyolarda ne gibi olumlu/olumsuz gelişmeler yaşandı?
+2. **Stratejik Sapmalar**: İki dönem arasında yatırımcının stratejisinde ne gibi değişiklikler göze çarpıyor?
+3. **Geleceğe Yönelik Yol Haritası**: Bu gelişim trendi göz önüne alındığında, yatırımcının bir sonraki adımda ne yapması önerilir?
+
+Raporunu Türkçe, son derece detaylı, finansal terminolojiye uygun ve profesyonel bir tonda yaz."""
+
+    comparison_report = await _generate_response(model, prompt)
+
+    # Save comparison as a new analysis run
+    analysis = AiAnalysis(
+        portfolio_id=portfolio.id,
+        analysis_type="comparison",
+        prompt=f"COMPARISON BETWEEN REPORT {report_one_id} AND REPORT {report_two_id}",
+        response=comparison_report,
+    )
+    db.add(analysis)
+    await db.commit()
+
+    return {
+        "report_one": {
+            "id": r1.id,
+            "type": r1.analysis_type,
+            "created_at": r1.created_at
+        },
+        "report_two": {
+            "id": r2.id,
+            "type": r2.analysis_type,
+            "created_at": r2.created_at
+        },
+        "comparison_report": comparison_report
+    }
+

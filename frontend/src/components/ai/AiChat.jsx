@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Markdown from 'react-markdown';
-import { Send, Bot, User as UserIcon } from 'lucide-react';
+import { Send, Bot, User as UserIcon, StopCircle } from 'lucide-react';
 import { aiApi } from '../../api/ai';
 import Button from '../common/Button';
 import './AiChat.css';
@@ -15,7 +15,10 @@ export default function AiChat({ portfolioId }) {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const messagesEndRef = useRef(null);
+  const abortControllerRef = useRef(null);
+  const streamingMsgIdRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -23,7 +26,27 @@ export default function AiChat({ portfolioId }) {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isSending]);
+  }, [messages, isSending, isStreaming]);
+
+  const handleStopStreaming = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    // Mark the streaming message as done so cursor-blink disappears
+    if (streamingMsgIdRef.current) {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === streamingMsgIdRef.current
+            ? { ...msg, isStreaming: false }
+            : msg
+        )
+      );
+      streamingMsgIdRef.current = null;
+    }
+    setIsStreaming(false);
+    setIsSending(false);
+  };
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -31,7 +54,7 @@ export default function AiChat({ portfolioId }) {
 
     const userText = inputValue;
     setInputValue('');
-    
+
     // Add user message
     const userMsgId = Date.now();
     setMessages((prev) => [
@@ -41,29 +64,74 @@ export default function AiChat({ portfolioId }) {
 
     setIsSending(true);
 
-    try {
-      const response = await aiApi.chat(portfolioId, userText);
-      const aiResponse = response.data;
+    // Create a placeholder AI message for streaming
+    const aiMsgId = Date.now() + 1;
+    streamingMsgIdRef.current = aiMsgId;
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          sender: 'ai',
-          text: aiResponse.response
-        }
-      ]);
+    setMessages((prev) => [
+      ...prev,
+      { id: aiMsgId, sender: 'ai', text: '', isStreaming: true }
+    ]);
+
+    setIsStreaming(true);
+
+    try {
+      abortControllerRef.current = aiApi.chatStream(portfolioId, userText, {
+        onChunk: (chunk) => {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === aiMsgId
+                ? { ...msg, text: msg.text + chunk }
+                : msg
+            )
+          );
+        },
+        onDone: () => {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === aiMsgId
+                ? { ...msg, isStreaming: false }
+                : msg
+            )
+          );
+          setIsStreaming(false);
+          setIsSending(false);
+          abortControllerRef.current = null;
+          streamingMsgIdRef.current = null;
+        },
+        onError: (error) => {
+          console.error('Stream error:', error);
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === aiMsgId
+                ? {
+                    ...msg,
+                    text: msg.text || 'Yapay zeka asistanı şu anda yanıt veremiyor. Lütfen API anahtarınızı (GEMINI_API_KEY) kontrol edin veya daha sonra tekrar deneyin.',
+                    isStreaming: false,
+                  }
+                : msg
+            )
+          );
+          setIsStreaming(false);
+          setIsSending(false);
+          abortControllerRef.current = null;
+          streamingMsgIdRef.current = null;
+        },
+      });
     } catch (error) {
       console.error('Chat error:', error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          sender: 'ai',
-          text: 'Yapay zeka asistanı şu anda yanıt veremiyor. Lütfen API anahtarınızı (GEMINI_API_KEY) kontrol edin veya daha sonra tekrar deneyin.'
-        }
-      ]);
-    } finally {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === aiMsgId
+            ? {
+                ...msg,
+                text: 'Yapay zeka asistanı şu anda yanıt veremiyor. Lütfen daha sonra tekrar deneyin.',
+                isStreaming: false,
+              }
+            : msg
+        )
+      );
+      setIsStreaming(false);
       setIsSending(false);
     }
   };
@@ -74,7 +142,16 @@ export default function AiChat({ portfolioId }) {
         <Bot size={20} className="chat-bot-icon" />
         <div>
           <h3 className="chat-title">Yapay Zekâ ile Portföy Sohbeti</h3>
-          <span className="chat-subtitle">Sorularınızı portföy verilerinizi analiz ederek yanıtlar</span>
+          <span className="chat-subtitle">
+            {isStreaming ? (
+              <span className="streaming-indicator">
+                <span className="streaming-dot"></span>
+                Yanıt yazılıyor...
+              </span>
+            ) : (
+              'Sorularınızı portföy verilerinizi analiz ederek yanıtlar'
+            )}
+          </span>
         </div>
       </div>
 
@@ -86,14 +163,17 @@ export default function AiChat({ portfolioId }) {
             </div>
             <div className="message-bubble">
               {msg.sender === 'ai' ? (
-                <Markdown className="markdown-content">{msg.text}</Markdown>
+                <div className="ai-response-content">
+                  <Markdown className="markdown-content">{msg.text}</Markdown>
+                  {msg.isStreaming && <span className="cursor-blink">▊</span>}
+                </div>
               ) : (
                 <p className="plain-text">{msg.text}</p>
               )}
             </div>
           </div>
         ))}
-        {isSending && (
+        {isSending && !isStreaming && (
           <div className="message-bubble-wrapper ai-msg">
             <div className="message-avatar">
               <Bot size={16} />
@@ -117,9 +197,15 @@ export default function AiChat({ portfolioId }) {
           disabled={isSending}
           className="chat-input"
         />
-        <Button type="submit" variant="primary" disabled={!inputValue.trim() || isSending}>
-          <Send size={16} />
-        </Button>
+        {isStreaming ? (
+          <Button type="button" variant="danger" onClick={handleStopStreaming} title="Yanıtı durdur">
+            <StopCircle size={16} />
+          </Button>
+        ) : (
+          <Button type="submit" variant="primary" disabled={!inputValue.trim() || isSending}>
+            <Send size={16} />
+          </Button>
+        )}
       </form>
     </div>
   );
