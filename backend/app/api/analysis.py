@@ -41,3 +41,24 @@ async def get_risk(
 ):
     """Get portfolio risk metrics such as volatility, Sharpe ratio, max drawdown, and diversification score."""
     return await analysis_service.get_risk_metrics(portfolio_id, current_user, db)
+
+
+@router.get("/benchmark")
+async def get_benchmark(
+    portfolio_id: int,
+    benchmark: str = "XU100.IS",
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Compare portfolio performance history against a benchmark index."""
+    return await analysis_service.get_benchmark_comparison(portfolio_id, benchmark, current_user, db)
+
+
+@router.get("/snapshots")
+async def get_snapshots(
+    portfolio_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get chronological snapshots of portfolio values."""
+    return await analysis_service.get_portfolio_snapshots(portfolio_id, current_user, db)

@@ -168,6 +168,11 @@
   border-color: var(--accent-blue, #3b82f6);
 }
 
+.common-select option {
+  background: #1a1f2e;
+  color: #f1f5f9;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;

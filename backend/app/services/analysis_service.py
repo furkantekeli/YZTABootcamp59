@@ -13,6 +13,7 @@ import yfinance as yf
 
 from app.models.portfolio import Portfolio
 from app.models.stock import PortfolioStock
+from app.models.snapshot import PortfolioSnapshot
 from app.models.user import User
 from app.utils.calculations import (
     calculate_unrealized_pnl,
@@ -289,6 +290,38 @@ async def get_risk_metrics(
                         daily_return += stock_return * weight_val
                 portfolio_returns.append(daily_return)
 
+    # ─── Calculate true Beta against BIST-100 index (XU100.IS) ───
+    beta_val = 0.0
+    benchmark_returns = []
+    try:
+        # Fetch BIST-100 historical data for beta calculation
+        benchmark_ticker = await asyncio.to_thread(lambda: yf.Ticker("XU100.IS"))
+        benchmark_hist = await asyncio.to_thread(lambda: benchmark_ticker.history(period="1y"))
+        benchmark_closes = benchmark_hist["Close"].tolist() if not benchmark_hist.empty else []
+        
+        if len(benchmark_closes) > 1:
+            for i in range(1, len(benchmark_closes)):
+                if benchmark_closes[i - 1] > 0:
+                    benchmark_returns.append((benchmark_closes[i] - benchmark_closes[i - 1]) / benchmark_closes[i - 1])
+            
+            # Align length of returns
+            min_ret_len = min(len(portfolio_returns), len(benchmark_returns))
+            if min_ret_len > 5:
+                p_rets = portfolio_returns[-min_ret_len:]
+                b_rets = benchmark_returns[-min_ret_len:]
+                
+                # Calculate covariance and variance
+                mean_p = sum(p_rets) / min_ret_len
+                mean_b = sum(b_rets) / min_ret_len
+                
+                covariance = sum((p - mean_p) * (b - mean_b) for p, b in zip(p_rets, b_rets)) / min_ret_len
+                variance_b = sum((b - mean_b) ** 2 for b in b_rets) / min_ret_len
+                
+                if variance_b > 0:
+                    beta_val = round(covariance / variance_b, 2)
+    except Exception:
+        pass
+
     sharpe = calculate_sharpe_ratio(portfolio_returns) if portfolio_returns else 0.0
 
     # Max drawdown from portfolio value series
@@ -316,10 +349,187 @@ async def get_risk_metrics(
     return {
         "portfolio_name": portfolio.name,
         "volatility": round(portfolio_vol, 2),
-        "beta": 0.0,  # Would need benchmark comparison
+        "beta": beta_val,
         "sharpe_ratio": sharpe,
         "max_drawdown": max_dd,
         "diversification_score": div_score,
         "risk_level": risk_level,
         "stock_risks": stock_risks,
     }
+
+
+async def get_benchmark_comparison(
+    portfolio_id: int, benchmark_symbol: str, user: User, db: AsyncSession
+) -> dict[str, Any]:
+    """
+    Generate date-by-date cumulative percentage returns comparing
+    the portfolio performance against a market benchmark (e.g. BIST-100 or S&P 500).
+    """
+    portfolio, stocks = await _get_portfolio_with_stocks(portfolio_id, user, db)
+
+    # Use XU100.IS as fallback if benchmark not specified
+    if not benchmark_symbol:
+        benchmark_symbol = "XU100.IS"
+
+    # Default result if no holdings
+    if not stocks:
+        return {"dates": [], "portfolio_returns": [], "benchmark_returns": [], "benchmark": benchmark_symbol}
+
+    # Fetch daily price histories for last 30 trading days to construct trend series
+    stock_histories = {}
+    async def _fetch_history(symbol: str):
+        try:
+            ticker = await asyncio.to_thread(lambda: yf.Ticker(symbol))
+            hist = await asyncio.to_thread(lambda: ticker.history(period="1mo"))
+            closes = hist["Close"].tolist() if not hist.empty else []
+            dates = [d.strftime("%Y-%m-%d") for d in hist.index] if not hist.empty else []
+            return symbol, closes, dates
+        except Exception:
+            return symbol, [], []
+
+    # Fetch portfolio stock histories
+    tasks = [_fetch_history(s.symbol) for s in stocks]
+    # Fetch benchmark history
+    tasks.append(_fetch_history(benchmark_symbol))
+
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    benchmark_closes = []
+    benchmark_dates = []
+
+    # Parse results
+    for res in results:
+        if isinstance(res, tuple):
+            sym, closes, dates = res
+            if sym == benchmark_symbol:
+                benchmark_closes = closes
+                benchmark_dates = dates
+            else:
+                stock_histories[sym] = (closes, dates)
+
+    # Calculate portfolio weights based on current market values
+    total_value = 0.0
+    weights = []
+    for stock in stocks:
+        current_price = stock.current_price or stock.avg_cost
+        val = stock.total_lots * current_price
+        total_value += val
+
+    for stock in stocks:
+        current_price = stock.current_price or stock.avg_cost
+        val = stock.total_lots * current_price
+        weight = val / total_value if total_value > 0 else 0
+        weights.append(weight)
+
+    # Construct overlapping timeline dates
+    if not benchmark_dates:
+        return {"dates": [], "portfolio_returns": [], "benchmark_returns": [], "benchmark": benchmark_symbol}
+
+    dates_list = benchmark_dates
+    portfolio_cum_returns = []
+    benchmark_cum_returns = []
+
+    # Initial values (cumulative performance starts at 0.0%)
+    portfolio_cum_returns.append(0.0)
+    benchmark_cum_returns.append(0.0)
+
+    # Calculating daily returns
+    portfolio_daily_history_value = [100.0]
+    benchmark_daily_history_value = [100.0]
+
+    for i in range(1, len(dates_list)):
+        # Calculate daily change for benchmark
+        b_change = 0.0
+        if len(benchmark_closes) > i and benchmark_closes[i - 1] > 0:
+            b_change = (benchmark_closes[i] - benchmark_closes[i - 1]) / benchmark_closes[i - 1]
+
+        # Calculate daily change for portfolio
+        p_change = 0.0
+        for stock, weight_val in zip(stocks, weights):
+            if stock.symbol in stock_histories:
+                closes, dates = stock_histories[stock.symbol]
+                # Find matching date index or close relative
+                if len(closes) > i and closes[i - 1] > 0:
+                    s_change = (closes[i] - closes[i - 1]) / closes[i - 1]
+                    p_change += s_change * weight_val
+
+        # Calculate cumulative returns
+        p_val = portfolio_daily_history_value[-1] * (1 + p_change)
+        portfolio_daily_history_value.append(p_val)
+        portfolio_cum_returns.append(round(p_val - 100.0, 2))
+
+        b_val = benchmark_daily_history_value[-1] * (1 + b_change)
+        benchmark_daily_history_value.append(b_val)
+        benchmark_cum_returns.append(round(b_val - 100.0, 2))
+
+    return {
+        "dates": dates_list,
+        "portfolio_returns": portfolio_cum_returns,
+        "benchmark_returns": benchmark_cum_returns,
+        "benchmark": benchmark_symbol
+    }
+
+
+async def create_portfolio_snapshot(
+    portfolio_id: int, user: User, db: AsyncSession
+) -> PortfolioSnapshot | None:
+    """
+    Take a snapshot of the current portfolio value and cost and save it to the DB.
+    """
+    try:
+        metrics = await get_performance_metrics(portfolio_id, user, db)
+        if not metrics or metrics.get("total_cost", 0) == 0:
+            return None
+
+        snapshot = PortfolioSnapshot(
+            portfolio_id=portfolio_id,
+            total_value=metrics.get("total_market_value", 0.0),
+            total_cost=metrics.get("total_cost", 0.0)
+        )
+        db.add(snapshot)
+        await db.flush()
+        return snapshot
+    except Exception as e:
+        print(f"Snapshot creation failed: {e}")
+        return None
+
+
+async def get_portfolio_snapshots(
+    portfolio_id: int, user: User, db: AsyncSession
+) -> list[dict]:
+    """
+    Get all historical snapshots for a portfolio to plot performance over time.
+    """
+    # Verify ownership
+    result = await db.execute(
+        select(Portfolio).where(
+            Portfolio.id == portfolio_id,
+            Portfolio.user_id == user.id
+        )
+    )
+    portfolio = result.scalar_one_or_none()
+    if not portfolio:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Portföy bulunamadı."
+        )
+
+    snapshot_result = await db.execute(
+        select(PortfolioSnapshot)
+        .where(PortfolioSnapshot.portfolio_id == portfolio_id)
+        .order_by(PortfolioSnapshot.created_at.asc())
+    )
+    snapshots = snapshot_result.scalars().all()
+
+    return [
+        {
+            "id": s.id,
+            "portfolio_id": s.portfolio_id,
+            "total_value": s.total_value,
+            "total_cost": s.total_cost,
+            "date": s.created_at.strftime("%Y-%m-%d")
+        }
+        for s in snapshots
+    ]
+
+

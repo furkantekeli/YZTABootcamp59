@@ -31,6 +31,12 @@ class User(Base):
     portfolios: Mapped[list["Portfolio"]] = relationship(  # noqa: F821
         "Portfolio", back_populates="user", cascade="all, delete-orphan", lazy="selectin"
     )
+    price_alerts: Mapped[list["PriceAlert"]] = relationship(  # noqa: F821
+        "PriceAlert", back_populates="user", cascade="all, delete-orphan", lazy="selectin"
+    )
+    watchlist_items: Mapped[list["WatchlistItem"]] = relationship(  # noqa: F821
+        "WatchlistItem", back_populates="user", cascade="all, delete-orphan", lazy="selectin"
+    )
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, username='{self.username}')>"
