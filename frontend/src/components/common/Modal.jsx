@@ -1,4 +1,5 @@
 import { useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 export default function Modal({ isOpen, onClose, title, children, size = 'md', footer }) {
@@ -29,7 +30,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', f
     xl: '860px',
   };
 
-  return (
+  const modalNode = (
     <div className="modal-overlay" onClick={onClose} id="modal-overlay">
       <div
         className="modal"
@@ -51,4 +52,6 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md', f
       </div>
     </div>
   );
+
+  return createPortal(modalNode, document.body);
 }
