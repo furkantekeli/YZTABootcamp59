@@ -56,3 +56,11 @@ class AiAnalysisResponse(BaseModel):
     created_at: datetime | None = None
 
     model_config = {"from_attributes": True}
+
+
+class WhatIfRequest(BaseModel):
+    """Schema for what-if simulation request."""
+    portfolio_id: int = Field(..., description="Portföy ID'si")
+    symbol: str = Field(..., min_length=1, description="Hisse sembolü (örn: EREGL.IS)")
+    lots: float = Field(..., gt=0, description="Lot sayısı")
+    price: float = Field(..., gt=0, description="Alım fiyatı")

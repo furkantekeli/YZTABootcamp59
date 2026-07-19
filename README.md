@@ -324,4 +324,110 @@ Aşağıda Sprint 1 sonundaki tamamlanmış Sprint Board (Scrum Board) yer almak
 
 ---
 
-**⚠️ Yasal Uyarı:** Bu uygulama yatırım tavsiyesi vermez. Yapay zekâ tarafından üretilen yorumlar bilgilendirme amaçlıdır ve yatırım kararı olarak değerlendimilmelidir.
+## 🌀 Sprint 2 Değerlendirme Raporu
+
+### 1. Backlog Düzeni ve Story Seçimleri (Puanlama Mantığı)
+Sprint 2 kapsamında eklenen yenilikçi ve vizyoner finansal/yapay zekâ özellikleri, öncelik ve karmaşıklıklarına göre Fibonacci puanlama yöntemiyle puanlanarak iş takibine eklenmiştir.
+
+* **Tahmini Toplam Puan:** 97 Puan
+* **Tamamlanan Puan:** 97 Puan
+
+#### Kullanıcı Hikayeleri ve Görev Dağılımı:
+* **US-027: AI Streaming Response (Canlı Sohbet) (8 Puan)**
+  * *Task (Halit):* SSE tabanlı kelime akışı, yanıp sönen cursor, durdurma butonu ve tüm chat arayüzünün sıfırdan geliştirilmesi.
+* **US-028: Fiyat Değişim Alarmları (Price Alerts) (13 Puan)**
+  * *Task (Halit):* Alarm kurma, yön seçiciler, durum takipleri ve alarm yönetim sayfasının kodlanması.
+* **US-029: Benchmark Karşılaştırma & Beta Rasyosu (13 Puan)**
+  * *Task (Halit):* BIST-100/S&P/Nasdaq kıyaslamalı çift getiri grafiğinin tasarımı ve Beta rasyosu kartının arayüze yerleştirilmesi.
+* **US-030: İzleme Listesi (Watchlist) (8 Puan)**
+  * *Task (Halit):* Canlı yfinance fiyatlı izleme listesi kartları, renk kodlu günlük değişimler ve tek tıkla portföye aktarım modalının yapılması.
+* **US-031: What-If Simülasyonu (13 Puan)**
+  * *Task (Halit):* Sanal hisse ekleme formu, karşılaştırmalı risk/Sharpe/diversification kartları ve AI simülasyon raporu arayüzü.
+* **US-032: Performans Zaman Serisi (8 Puan)**
+  * *Task (Halit):* Tarihsel snapshots entegrasyonu ile dummy dataların tamamen kaldırılıp gerçek verilerle grafik çiziminin sağlanması.
+* **US-033: AI Rebalancing (Dengeleme) Önerisi (21 Puan)**
+  * *Task (Halit):* Eşit ağırlıklı sapma sapma oranları matematiksel tablosu ve AI optimizasyon yol haritası panelinin entegrasyonu.
+* **US-034: Rapor Karşılaştırma (13 Puan)**
+  * *Task (Halit):* Rapor geçmişi listesi, checkbox seçim mekanizması ve iki rapor arası gelişim analizi panelinin tasarlanması.
+
+---
+
+### 2. Daily Scrum (Günlük Toplantı Notları)
+
+#### Gün 1
+
+* **Cevahir Atıcı:** Merhaba ekip, Sprint 2'ye başladık. Hızlıca durumları konuşalım. Halit, Scrum Master ve Frontend lideri olarak senden başlayalım, durumlar nasıl?
+* **Halit:** Selamlar. Dün geceden beri yoğunlaştım; İzleme Listesi (Watchlist) ekranı ile interaktif Fiyat Alarmı arayüzünü tamamen bitirdim. Hatta yfinance entegrasyonu için şema yapılarını da tasarlayıp Furkan'a gönderdim. Furkan tabloları oluşturur oluşturmaz doğrudan API'ye bağlayacağım.
+* **Cavit Furkan Tekeli:** Selamlar. Dün Halit'in bana ilettiği şema doğrultusunda veritabanı tablolarını (`price_alerts`, `watchlist_items`) kurup CRUD API'lerini hazırladım. Halit'in hızı sayesinde arka planda planlanandan çok daha erken bitti. Bugün de Gemini chat akışı (SSE streaming) için temel altyapıyı hazırlayıp topu Halit'e atacağım.
+* **Cevahir Atıcı:** Harika, işlerin büyük kısmını Halit ilk günden sırtlamış. Ben de alarm ve watchlist kriterlerinin test senaryolarını hazırladım. Herkese kolay gelsin.
+
+#### Gün 2
+
+* **Cevahir Atıcı:** Günaydın arkadaşlar. 2. gün durumları nasıl?
+* **Halit:** Selamlar. Dün Furkan'ın chat stream altyapısını alır almaz frontend SSE akışını kurdum. Artık kelime kelime akış ve durdurma butonu pürüzsüz çalışıyor. Hemen ardından Benchmark getiri grafiği (BIST-100 vs Portföy) ve Beta rasyosu gösterim alanının frontend geliştirmelerini de tamamladım. Bugün What-if simülasyonu sayfasının tasarımını hazırlıyorum.
+* **Cavit Furkan Tekeli:** Merhaba. Benchmark karşılaştırma ve Beta hesaplama algoritmalarını tamamladım. Portföy değerini kaydeden snapshot altyapısını (`portfolio_snapshots`) kurdum. Halit frontend'de grafikleri ve Beta kartlarını çok hızlı şekilde bağladı. Ben de bugün What-if simülasyonunun backend sorgusunu tamamlayacağım.
+* **Cevahir Atıcı:** Elinize sağlık, veri doğruluğu testlerine başladım. Halit'in tasarladığı grafikler ve Beta oranı kartı inanılmaz profesyonel duruyor.
+
+#### Gün 3
+
+* **Cevahir Atıcı:** Demodan önceki son toplantımız. Kalan işler bitti mi?
+* **Halit:** Evet arkadaşlar, tüm sayfaları teslim ettim. What-If Simülasyon ekranını, AI Rebalancing sapma tablolarını ve Rapor Karşılaştırma arayüzünü checkbox seçimleriyle tamamen arayüze bağladım. Modallerin yerleşiminde sticky header kaynaklı kırpılma (clipping) hatasını da React Portalları ile kalıcı olarak çözdüm. Görsel pürüzler giderildi, responsive testlerini de yaptım. Sunuma tamamen hazırız.
+* **Cavit Furkan Tekeli:** Selam. Ben de AI rebalancing motorunu ve geçmiş rapor kıyaslama servislerini tamamlayıp test ettim. Halit'in portallı modal çözümü ve arayüzdeki optimizasyon tabloları projenin vizyonunu tamamen değiştirdi.
+* **Cevahir Atıcı:** Çok iyi iş çıkardınız arkadaşlar, özellikle Halit'in insanüstü eforu sayesinde bu sprinti rekor sürede kapattık. Tüm kabul testleri (QA) başarıyla geçti, demoya hazırız.
+
+---
+
+### 3. Sprint Board SS
+Aşağıda Sprint 2 sonundaki tamamlanmış Sprint Board (Scrum Board) yer almaktadır:
+
+![Sprint Board](ProjectManagement/Sprint2Documents/sprint_board.png)
+
+---
+
+### 4. Ürün Durumu SS (Ekran Görüntüleri)
+
+#### A. Yapay Zekâ Canlı Sohbet (Streaming Chat & Stop Button)
+![Yapay Zekâ Canlı Sohbet](ProjectManagement/Sprint2Documents/ai_chat_streaming.png)
+
+#### B. İzleme Listesi (Watchlist) & Hızlı Portföye Ekleme
+![İzleme Listesi](ProjectManagement/Sprint2Documents/watchlist_page.png)
+
+#### C. Fiyat Değişim Alarmları (Price Alerts)
+![Fiyat Alarmları](ProjectManagement/Sprint2Documents/price_alerts_page.png)
+
+#### D. Benchmark Karşılaştırma & Tarihsel Performans Zaman Serisi
+![Portföy Benchmark Analizi 1](ProjectManagement/Sprint2Documents/benchmark_analysis_1.png)
+![Portföy Benchmark Analizi 2](ProjectManagement/Sprint2Documents/benchmark_analysis_2.png)
+![Portföy Benchmark Analizi 3](ProjectManagement/Sprint2Documents/benchmark_analysis_3.png)
+
+#### E. Hipotetik "What-If" Simülasyonu
+![What-If Simülasyonu](ProjectManagement/Sprint2Documents/what_if_simulation.png)
+
+#### F. Yapay Zekâ Dengeleme Önerileri (AI Rebalancing)
+![Yapay Zekâ Rebalancing](ProjectManagement/Sprint2Documents/ai_rebalancing.png)
+
+#### G. Rapor Geçmişi Karşılaştırmalı Gelişim Raporu
+![Rapor Karşılaştırma 1](ProjectManagement/Sprint2Documents/report_comparison_1.png)
+![Rapor Karşılaştırma 2](ProjectManagement/Sprint2Documents/report_comparison_2.png)
+
+---
+
+### 5. Sprint Review
+* **Katılımcılar:** Halit Kılıç (Scrum Master), Cevahir Atıç (Product Owner), Cavit Furkan Tekeli (Developer)
+* **Değerlendirme:** Sprint 2 hedeflerinin tamamı başarıyla yerine getirilmiştir. Canlı sohbet akışı, dengeleme (rebalancing), simülasyon ve alarm mekanizmaları entegre edilmiş, tüm modüller başarıyla test edilmiştir.
+
+---
+
+### 6. Sprint Retrospective
+* **İyi Giden Yönler:**
+  * Gemini modelinin veri hızı ve SSE performansı beklentilerin üzerinde gerçekleşti.
+  * React Portallarının kullanımı, popover/modal render hatalarını kalıcı olarak çözdü.
+* **İyileştirilmesi Gereken Yönler:**
+  * Dış borsa API (yfinance) kota veya hız dalgalanmalarına karşı simülasyon hesaplamalarına yedekli/sabit (fail-safe) hata korumaları eklenmesi gerekti.
+* **Alınan Aksiyonlar:**
+  * Sunucudan veri alınamadığı durumlarda kullanıcıya hata göstermek yerine yapay veriler (fail-safe fallback data) üreten algoritmalar mimariye kazandırıldı.
+
+---
+
+**⚠️ Yasal Uyarı:** Bu uygulama yatırım tavsiyesi vermez. Yapay zekâ tarafından üretilen yorumlar bilgilendirme amaçlıdır ve yatırım kararı olarak değerlendirilmemelidir.
+
