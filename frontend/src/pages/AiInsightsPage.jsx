@@ -130,15 +130,16 @@ export default function AiInsightsPage() {
 
   const handleRunSimulation = async (e) => {
     e.preventDefault();
-    if (!simSelectedStock || !simLots || !simPrice) return;
+    const symbolToUse = simSelectedStock?.symbol || simSearchQuery.trim();
+    if (!symbolToUse || !simLots || !simPrice) return;
 
     setIsSimulating(true);
     try {
       const res = await aiApi.simulateWhatIf(
         currentPortfolio.id,
-        simSelectedStock.symbol,
-        parseFloat(simLots),
-        parseFloat(simPrice)
+        symbolToUse,
+        parseFloat(simLots.toString().replace(',', '.')),
+        parseFloat(simPrice.toString().replace(',', '.'))
       );
       setSimResult(res.data);
       addToast({

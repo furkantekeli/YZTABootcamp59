@@ -84,6 +84,23 @@ export const aiApi = {
 
   getRecommendations: (portfolioId) =>
     client.get(`/ai/recommendations/${portfolioId}`),
+
+  rebalance: (portfolioId) =>
+    client.get(`/ai/rebalance/${portfolioId}`),
+
+  simulateWhatIf: (portfolioId, symbol, lots, price) =>
+    client.post('/ai/simulate', {
+      portfolio_id: portfolioId,
+      symbol,
+      lots: Number(lots),
+      price: Number(price),
+    }),
+
+  getReportsHistory: (portfolioId) =>
+    client.get(`/ai/reports/${portfolioId}`),
+
+  compareReports: (portfolioId, reportOneId, reportTwoId) =>
+    client.post(`/ai/compare?portfolio_id=${portfolioId}&report_one_id=${reportOneId}&report_two_id=${reportTwoId}`),
 };
 
 export default aiApi;
