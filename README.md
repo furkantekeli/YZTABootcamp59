@@ -354,6 +354,9 @@ Sprint 2 kapsamında eklenen yenilikçi ve vizyoner finansal/yapay zekâ özelli
 
 ### 2. Daily Scrum (Günlük Toplantı Notları)
 
+![Daily Scrum Yazışmaları 1](ProjectManagement/Sprint2Documents/daily_scrum_1.png)
+![Daily Scrum Yazışmaları 2](ProjectManagement/Sprint2Documents/daily_scrum_2.png)
+
 #### Gün 1
 
 * **Cevahir Atıcı:** Merhaba ekip, Sprint 2'ye başladık. Hızlıca durumları konuşalım. Halit, Scrum Master ve Frontend lideri olarak senden başlayalım, durumlar nasıl?
