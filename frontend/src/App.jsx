@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import Layout from './components/layout/Layout';
+import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
@@ -39,6 +40,7 @@ export default function App() {
     <>
       <Toast />
       <Routes>
+        <Route path="/" element={<LandingPage />} />
         <Route
           path="/login"
           element={
@@ -56,25 +58,24 @@ export default function App() {
           }
         />
         <Route
-          path="/"
           element={
             <ProtectedRoute>
               <Layout />
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="portfolio" element={<PortfolioPage />} />
-          <Route path="transactions" element={<TransactionsPage />} />
-          <Route path="analysis" element={<AnalysisPage />} />
-          <Route path="ai-insights" element={<AiInsightsPage />} />
-          <Route path="news" element={<NewsPage />} />
-          <Route path="watchlist" element={<WatchlistPage />} />
-          <Route path="alerts" element={<AlertsPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/portfolio" element={<PortfolioPage />} />
+          <Route path="/transactions" element={<TransactionsPage />} />
+          <Route path="/analysis" element={<AnalysisPage />} />
+          <Route path="/ai-insights" element={<AiInsightsPage />} />
+          <Route path="/news" element={<NewsPage />} />
+          <Route path="/watchlist" element={<WatchlistPage />} />
+          <Route path="/alerts" element={<AlertsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );
 }
+
