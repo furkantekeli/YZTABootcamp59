@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import { useEffect } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import FloatingAiAssistant from '../ai/FloatingAiAssistant';
 import { useUiStore } from '../../store/uiStore';
 import { useAuthStore } from '../../store/authStore';
 import { usePortfolioStore } from '../../store/portfolioStore';
@@ -18,14 +19,23 @@ export default function Layout() {
   }, []);
 
   return (
-    <div className={`layout ${sidebarOpen ? 'layout--sidebar-open' : 'layout--sidebar-closed'}`} id="app-layout">
+    <div
+      className={`layout ${
+        sidebarOpen ? 'layout--sidebar-open' : 'layout--sidebar-closed'
+      }`}
+      id="app-layout"
+    >
       <Sidebar />
+
       <div className="layout-main">
         <Header />
+
         <main className="layout-content">
           <Outlet />
         </main>
       </div>
+
+      <FloatingAiAssistant />
     </div>
   );
 }

@@ -1,0 +1,246 @@
+.floating-ai-trigger {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  z-index: 1100;
+
+  display: flex;
+  align-items: center;
+  gap: 9px;
+
+  min-width: 58px;
+  height: 58px;
+  padding: 0 19px;
+
+  border: 0;
+  border-radius: 999px;
+  color: #ffffff;
+  cursor: pointer;
+
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  box-shadow:
+    0 14px 40px rgba(37, 99, 235, 0.38),
+    0 0 0 1px rgba(255, 255, 255, 0.12);
+
+  font-size: 14px;
+  font-weight: 700;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.floating-ai-trigger:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 18px 48px rgba(37, 99, 235, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.floating-ai-trigger.is-open {
+  min-width: 58px;
+  width: 58px;
+  padding: 0;
+  justify-content: center;
+}
+
+.floating-ai-panel {
+  position: fixed;
+  right: 28px;
+  bottom: 98px;
+  z-index: 1099;
+
+  display: flex;
+  flex-direction: column;
+
+  width: min(420px, calc(100vw - 32px));
+  height: min(620px, calc(100vh - 130px));
+
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 20px;
+
+  background: rgba(12, 18, 31, 0.97);
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 255, 255, 0.03);
+
+  backdrop-filter: blur(22px);
+  animation: floatingAiOpen 0.22s ease-out;
+}
+
+@keyframes floatingAiOpen {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.floating-ai-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+
+  padding: 15px 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(37, 99, 235, 0.17),
+      rgba(124, 58, 237, 0.12)
+    );
+}
+
+.floating-ai-panel__identity {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+.floating-ai-panel__icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+
+  color: #ffffff;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.3);
+}
+
+.floating-ai-panel__identity div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.floating-ai-panel__identity strong {
+  color: #f8fafc;
+  font-size: 14px;
+}
+
+.floating-ai-panel__identity small {
+  overflow: hidden;
+  color: #94a3b8;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.floating-ai-panel__actions {
+  display: flex;
+  gap: 6px;
+}
+
+.floating-ai-panel__actions button {
+  display: grid;
+  place-items: center;
+
+  width: 34px;
+  height: 34px;
+
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 10px;
+  color: #cbd5e1;
+  cursor: pointer;
+
+  background: rgba(255, 255, 255, 0.04);
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
+}
+
+.floating-ai-panel__actions button:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.floating-ai-panel__content {
+  min-height: 0;
+  flex: 1;
+}
+
+/* Mevcut AiChat bileşenini pencereye uyarlar */
+.floating-ai-panel__content .ai-chat-card {
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.floating-ai-panel__content .chat-header {
+  display: none;
+}
+
+.floating-ai-panel__content .chat-messages-container {
+  padding: 16px;
+}
+
+.floating-ai-panel__content .chat-input-area {
+  padding: 12px;
+}
+
+.floating-ai-panel__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+
+  height: 100%;
+  padding: 32px;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.floating-ai-panel__empty svg {
+  margin-bottom: 14px;
+  color: #60a5fa;
+}
+
+.floating-ai-panel__empty strong {
+  margin-bottom: 8px;
+  color: #f1f5f9;
+}
+
+.floating-ai-panel__empty p {
+  margin: 0;
+  max-width: 280px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+@media (max-width: 640px) {
+  .floating-ai-trigger {
+    right: 16px;
+    bottom: 16px;
+  }
+
+  .floating-ai-trigger span {
+    display: none;
+  }
+
+  .floating-ai-trigger {
+    width: 56px;
+    min-width: 56px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .floating-ai-panel {
+    right: 16px;
+    bottom: 84px;
+    width: calc(100vw - 32px);
+    height: calc(100vh - 108px);
+  }
+}

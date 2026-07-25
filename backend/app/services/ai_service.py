@@ -30,7 +30,7 @@ if settings.GEMINI_API_KEY:
 # Model selection justification:
 # Gemini 1.5 Flash is chosen due to its high speed, long context window, native support
 # for structured schemas, and robust Turkish language generation capability.
-GEMINI_MODEL = "gemini-1.5-flash"
+GEMINI_MODEL = "gemini-3.6-flash"
 
 
 def _get_model() -> genai.GenerativeModel:
@@ -417,7 +417,8 @@ Lütfen bu soruya yanıt verirken:
 - Varsa sohbet geçmişindeki bağlamı göz önünde bulundur.
 - Portföyün güncel durumunu ve hisse senedi detaylarını temel alarak somut rakamlar ve yüzdeler kullan.
 - Türkçe, kibar, profesyonel ve finansal okuryazarlığı destekleyen bir tonda yanıt yaz.
-- Yatırım tavsiyesi olmadığını hatırlatacak profesyonel duruşu koru."""
+- Yatırım tavsiyesi olmadığını hatırlatacak profesyonel duruşu koru.
+- Yanıt en fazla 100 kelime ve 4 kısa madde olsun. Gereksiz açıklama yapma."""
 
     try:
         response = await _generate_response(model, prompt)
@@ -513,7 +514,8 @@ Lütfen bu soruya yanıt verirken:
 - Varsa sohbet geçmişindeki bağlamı göz önünde bulundur.
 - Portföyün güncel durumunu ve hisse senedi detaylarını temel alarak somut rakamlar ve yüzdeler kullan.
 - Türkçe, kibar, profesyonel ve finansal okuryazarlığı destekleyen bir tonda yanıt yaz.
-- Yatırım tavsiyesi olmadığını hatırlatacak profesyonel duruşu koru."""
+- Yatırım tavsiyesi olmadığını hatırlatacak profesyonel duruşu koru.
+- Yanıt en fazla 100 kelime ve 4 kısa madde olsun. Gereksiz açıklama yapma."""
 
     return portfolio, prompt
 
