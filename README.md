@@ -431,6 +431,126 @@ Aşağıda Sprint 2 sonundaki tamamlanmış Sprint Board (Scrum Board) yer almak
   * Sunucudan veri alınamadığı durumlarda kullanıcıya hata göstermek yerine yapay veriler (fail-safe fallback data) üreten algoritmalar mimariye kazandırıldı.
 
 ---
+## 🌀 Sprint 3 Değerlendirme Raporu
 
+### 1. Backlog Düzeni ve Story Seçimleri (Puanlama Mantığı)
+
+Sprint 3 kapsamında yapay zekâ yatırım asistanının kullanıcı deneyimini geliştirmeye yönelik iyileştirmeler gerçekleştirilmiştir. Mevcut AI sohbet altyapısı yeniden kullanılarak, kullanıcının uygulamanın herhangi bir sayfasından yatırım asistanına hızlıca ulaşabilmesi sağlanmıştır.
+
+Görevler öncelik ve teknik karmaşıklıklarına göre Fibonacci puanlama yöntemiyle değerlendirilmiştir.
+
+* **Tahmini Toplam Puan:** 16 Puan
+* **Tamamlanan Puan:** 16 Puan
+
+#### Kullanıcı Hikayeleri ve Görev Dağılımı
+
+* **US-035: Sayfalar Arası Erişilebilir Floating AI Asistanı (8 Puan)**
+  * Uygulamanın sağ alt köşesinde sabit olarak bulunan AI Asistan butonunun geliştirilmesi.
+  * Mevcut `AiChat` bileşeninin floating panel içerisinde yeniden kullanılması.
+  * Kullanıcının aktif portföy bilgisinin asistana otomatik olarak aktarılması.
+  * Asistan paneline kapatma ve tam ekran AI sayfasına geçiş butonlarının eklenmesi.
+  * Panelin mobil ve masaüstü ekranlara uyumlu hale getirilmesi.
+
+* **US-036: Gemini API ve AI Servis Kararlılığı (5 Puan)**
+  * Gemini model yapılandırmasının güncellenmesi.
+  * Gemini API anahtarının backend ortam değişkenleri üzerinden tanımlanması.
+  * Frontend ve backend arasındaki AI mesajlaşma bağlantısının test edilmesi.
+  * Yapay zekâ yanıtı alınamadığında oluşan hata mesajlarının incelenmesi ve giderilmesi.
+
+* **US-037: AI Yanıt Uzunluğunun Optimize Edilmesi (3 Puan)**
+  * Sohbet promptlarına maksimum yanıt uzunluğu kuralının eklenmesi.
+  * Yanıtların en fazla 100 kelime ve 4 kısa madde olacak şekilde sınırlandırılması.
+  * Gereksiz ve uzun finansal açıklamaların azaltılması.
+  * Kullanıcıya daha okunabilir ve hızlı anlaşılabilir cevaplar sunulması.
+
+---
+
+### 2. Daily Scrum (Günlük Toplantı Notları)
+
+#### Gün 1
+
+* **Cevahir Atıcı:** Kullanıcının AI sayfasına her seferinde menüden geçmek zorunda kalmadan yatırım asistanına ulaşabilmesi gerektiğini belirledim. Sağ alt köşede açılır bir AI sohbet paneli oluşturulmasına karar verildi.
+* **Halit Kılıç:** Mevcut `AiChat` bileşenini tekrar kullanacak floating panel tasarımına başladım. Panelin dashboard içeriğini kapatmaması ve modern tasarımla uyumlu olması önceliklendirildi.
+* **Cavit Furkan Tekeli:** Backend tarafındaki mevcut AI chat endpointlerini kontrol ettim. Yeni bir endpoint geliştirmek yerine mevcut servislerin kullanılabileceği doğrulandı.
+
+#### Gün 2
+
+* **Cevahir Atıcı:** Floating AI panelinin ilk kullanıcı testlerini gerçekleştirdim. Panelin açılması ve mesaj gönderme işlemi çalıştı ancak Gemini servisinden yanıt alınırken hata oluştu.
+* **Cavit Furkan Tekeli:** Gemini model yapılandırması ve API anahtarı kontrol edildi. Backend ortam değişkenleri yeniden tanımlanarak AI servisi tekrar çalıştırıldı.
+* **Halit Kılıç:** Asistan paneline kapatma ve tam ekran AI analiz sayfasına geçiş butonlarını ekledim. Aktif portföy adının panel başlığında gösterilmesini sağladım.
+
+#### Gün 3
+
+* **Cevahir Atıcı:** AI asistana portföy riski, kâr/zarar ve çeşitlendirme soruları sorularak kabul testleri gerçekleştirildi.
+* **Halit Kılıç:** Panelin responsive görünümü, mesaj alanı ve sağ alt köşe konumlandırması kontrol edildi.
+* **Cavit Furkan Tekeli:** Yapay zekânın çok uzun yanıt vermemesi için promptlara maksimum 100 kelime ve 4 kısa madde sınırı eklendi.
+* **Cevahir Atıcı:** Tüm testlerin başarıyla tamamlanmasının ardından Sprint 3 ürün ekran görüntüleri hazırlandı.
+
+---
+
+### 3. Sprint Board SS
+
+Aşağıda Sprint 3 sonundaki tamamlanmış Sprint Board yer almaktadır:
+
+![Sprint 3 Board](ProjectManagement/Sprint3Documents/sprint_board.png)
+
+---
+
+### 4. Ürün Durumu SS (Ekran Görüntüleri)
+
+#### A. Dashboard Üzerinde Floating AI Asistanı
+
+Kullanıcı, dashboard ekranından ayrılmadan sağ alt köşede bulunan AI Asistan butonuna tıklayarak sohbet panelini açabilmektedir.
+
+![Dashboard Floating AI Asistanı](ProjectManagement/Sprint3Documents/a.png)
+
+#### B. Portföye Özel AI Sohbet Paneli
+
+AI Asistan, kullanıcının aktif portföy bilgilerini kullanarak kâr/zarar, risk seviyesi, portföy dağılımı ve çeşitlendirme konularındaki soruları yanıtlamaktadır.
+
+![Portföye Özel AI Sohbet](ProjectManagement/Sprint3Documents/b.png)
+
+---
+
+### 5. Sprint Review
+
+* **Katılımcılar:** Halit Kılıç (Scrum Master), Cevahir Atıcı (Product Owner), Cavit Furkan Tekeli (Developer)
+
+* **Değerlendirme:** Sprint 3 kapsamında mevcut yapay zekâ sohbet sistemi daha erişilebilir hale getirilmiştir. Kullanıcıların uygulamanın farklı sayfalarından ayrılmadan AI yatırım asistanına ulaşabilmesi sağlanmıştır. Asistan, aktif portföy verilerini kullanarak kullanıcı sorularına kişiselleştirilmiş cevaplar verebilmektedir.
+
+* **Sprint 3'te Tamamlanan İşler:**
+  * ✅ Sağ alt köşede açılır Floating AI Asistan butonu
+  * ✅ Mevcut AI chat altyapısının floating panelde kullanılması
+  * ✅ Aktif portföy bilgisinin asistana aktarılması
+  * ✅ Tam ekran AI sayfasına geçiş butonu
+  * ✅ Gemini API bağlantısının yapılandırılması
+  * ✅ AI hata durumlarının giderilmesi
+  * ✅ Yanıtların maksimum 100 kelimeyle sınırlandırılması
+  * ✅ Responsive ve modern sohbet paneli tasarımı
+  * ✅ Portföye özel risk, kâr/zarar ve dağılım sorularının test edilmesi
+
+---
+
+### 6. Sprint Retrospective
+
+* **İyi Giden Yönler:**
+  * Mevcut `AiChat` bileşeninin yeniden kullanılması geliştirme süresini önemli ölçüde azalttı.
+  * Floating panel sayesinde kullanıcıların AI asistanına erişim süreci kolaylaştırıldı.
+  * Aktif portföy bilgisinin otomatik kullanılması, AI yanıtlarının kişiselleştirilmesini sağladı.
+  * Gemini API bağlantısı başarıyla yapılandırıldı.
+  * Prompt uzunluğu sınırı sayesinde daha kısa ve okunabilir cevaplar elde edildi.
+
+* **İyileştirilmesi Gereken Yönler:**
+  * AI servis hataları başlangıçta kullanıcıya yalnızca genel bir hata mesajı olarak gösterildi.
+  * API anahtarlarının her terminal oturumunda tekrar tanımlanması geliştirme sürecini yavaşlattı.
+  * Sohbet paneli içerisinde çok uzun AI cevaplarının görünümü kullanıcı deneyimini olumsuz etkiledi.
+
+* **Alınan Aksiyonlar:**
+  * AI promptlarına maksimum 100 kelime ve 4 kısa madde sınırı eklendi.
+  * Gemini API anahtarının kalıcı olarak `.env` dosyası üzerinden yönetilmesine karar verildi.
+  * Backend hata mesajlarının daha açıklayıcı hale getirilmesi sonraki geliştirme planına eklendi.
+  * Floating AI panelinin farklı ekran boyutlarında responsive testleri tamamlandı.
+
+---
 **⚠️ Yasal Uyarı:** Bu uygulama yatırım tavsiyesi vermez. Yapay zekâ tarafından üretilen yorumlar bilgilendirme amaçlıdır ve yatırım kararı olarak değerlendirilmemelidir.
 
