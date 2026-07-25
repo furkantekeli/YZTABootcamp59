@@ -492,11 +492,11 @@ Görevler öncelik ve teknik karmaşıklıklarına göre Fibonacci puanlama yön
 
 Aşağıda Sprint 3 sonundaki tamamlanmış Sprint Board yer almaktadır:
 
-![Sprint 3 Board](ProjectManagement/Sprint3Documents/sprint_board.png)
+
 
 ---
 
-### 4. Ürün Durumu SS (Ekran Görüntüleri)
+### 3. Ürün Durumu SS (Ekran Görüntüleri)
 
 #### A. Dashboard Üzerinde Floating AI Asistanı
 
