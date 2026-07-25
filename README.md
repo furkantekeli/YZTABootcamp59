@@ -552,5 +552,12 @@ AI Asistan, kullanıcının aktif portföy bilgilerini kullanarak kâr/zarar, ri
   * Floating AI panelinin farklı ekran boyutlarında responsive testleri tamamlandı.
 
 ---
+## 🌐 Canlı Demo
+
+🚀 **[YatırımZekası Uygulamasını Aç](https://yatirimzekasi.onrender.com)**
+
+> Ücretsiz sunucu kullanılmaktadır. Backend uyku modundaysa ilk açılış 30–60 saniye sürebilir.
+
+---
 **⚠️ Yasal Uyarı:** Bu uygulama yatırım tavsiyesi vermez. Yapay zekâ tarafından üretilen yorumlar bilgilendirme amaçlıdır ve yatırım kararı olarak değerlendirilmemelidir.
 
