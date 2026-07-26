@@ -556,7 +556,14 @@ AI Asistan, kullanıcının aktif portföy bilgilerini kullanarak kâr/zarar, ri
 
 🚀 **[YatırımZekası Uygulamasını Aç](https://yatirimzekasi.onrender.com)**
 
-> Ücretsiz sunucu kullanılmaktadır. Backend uyku modundaysa ilk açılış 30–60 saniye sürebilir.
+- **Canlı Uygulama:** https://yatirimzekasi.onrender.com
+- **Kayıt Ekranı:** https://yatirimzekasi.onrender.com/register
+- **Backend API:** https://yatirimzekasi-api.onrender.com
+- **API Sağlık Kontrolü:** https://yatirimzekasi-api.onrender.com/api/health
+
+> Proje ücretsiz Render servisleri üzerinde çalışmaktadır. Backend uzun süre kullanılmadığında uyku moduna geçebilir; ilk isteğin cevaplanması 30–60 saniye sürebilir.
+
+---
 
 ---
 **⚠️ Yasal Uyarı:** Bu uygulama yatırım tavsiyesi vermez. Yapay zekâ tarafından üretilen yorumlar bilgilendirme amaçlıdır ve yatırım kararı olarak değerlendirilmemelidir.
