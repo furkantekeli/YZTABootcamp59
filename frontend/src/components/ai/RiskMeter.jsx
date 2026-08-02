@@ -22,6 +22,8 @@ export default function RiskMeter({ score = 1, label = 'Düşük' }) {
     }
   };
 
+  const formattedLabel = label ? (label.includes('Hesap') ? label : `${label} Risk`) : 'Hesaplanıyor';
+
   return (
     <div className="risk-meter-container">
       <div className="risk-meter-gauge">
@@ -29,7 +31,7 @@ export default function RiskMeter({ score = 1, label = 'Düşük' }) {
         <div className="gauge-fill" style={{ background: `linear-gradient(90deg, #10b981, #f59e0b, #ef4444)` }}></div>
         <div className="gauge-cover">
           <span className="risk-score-value font-mono">{normalizedScore.toFixed(1)}</span>
-          <span className="risk-score-label" style={{ color: getRiskColor(label) }}>{label} Risk</span>
+          <span className="risk-score-label" style={{ color: getRiskColor(label) }}>{formattedLabel}</span>
         </div>
         <div className="gauge-needle-hub"></div>
         <div className="gauge-needle" style={{ transform: `rotate(${rotation}deg)` }}></div>

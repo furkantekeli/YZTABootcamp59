@@ -52,19 +52,19 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding-top: 2.25rem;
+  padding-top: 1.25rem;
 }
 
 .risk-score-value {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 800;
   color: var(--text-primary, #f1f5f9);
-  line-height: 1;
-  margin-bottom: 0.25rem;
+  line-height: 1.1;
+  margin-bottom: 0.15rem;
 }
 
 .risk-score-label {
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
 }
