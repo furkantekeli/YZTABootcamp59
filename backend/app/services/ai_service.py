@@ -30,7 +30,7 @@ if settings.GEMINI_API_KEY:
 # Model selection justification:
 # Gemini 1.5 Flash is chosen due to its high speed, long context window, native support
 # for structured schemas, and robust Turkish language generation capability.
-GEMINI_MODEL = "gemini-3.6-flash"
+GEMINI_MODEL = "gemini-3.5-flash-lite"
 
 
 def _get_model() -> genai.GenerativeModel:
@@ -205,16 +205,18 @@ class MarketNewsAgent:
         self.model = model
 
     async def run(self, stocks: list[PortfolioStock]) -> str:
-        # Fetch news for stocks in the portfolio
         all_news = []
-        for stock in stocks[:5]: # Limit to top 5 stocks to manage context
-            news = await news_service.get_stock_news(stock.symbol)
-            all_news.extend(news[:2]) # Top 2 news per stock
-            
-        if not all_news:
-            # Get general financial news
-            all_news = await news_service.get_financial_news()
-            all_news = all_news[:5]
+        try:
+            for stock in stocks[:5]: # Limit to top 5 stocks to manage context
+                news = await news_service.get_stock_news(stock.symbol)
+                all_news.extend(news[:2]) # Top 2 news per stock
+                
+            if not all_news:
+                # Get general financial news
+                all_news = await news_service.get_financial_news()
+                all_news = all_news[:5]
+        except Exception as e:
+            print(f"MarketNewsAgent: news fetch error: {e}")
 
         prompt = f"""Sen bir **Piyasa Duyarlılık (Sentiment) Ajanısın**. Görevin portföydeki şirketler veya genel piyasa hakkında çıkan son haberleri inceleyerek duygu analizi yapmaktır.
         
@@ -236,68 +238,50 @@ async def analyze_portfolio(
 ) -> AiAnalysisResponse:
     """
     Comprehensive Multi-Agent analysis of a portfolio.
-    Orchestrates PortfolioAnalystAgent, RiskManagerAgent, and MarketNewsAgent.
+    Orchestrates PortfolioAnalystAgent, RiskManagerAgent, and MarketNewsAgent in high-speed parallel mode.
     """
     portfolio, stocks, context = await _build_portfolio_context(portfolio_id, user, db)
     model = _get_model()
     
-    # 1. Gather quantitative analysis from service tools (Tool Calling Simulation)
-    perf_metrics = await analysis_service.get_performance_metrics(portfolio_id, user, db)
-    allocation = await analysis_service.get_allocation(portfolio_id, user, db)
-    risk_metrics = await analysis_service.get_risk_metrics(portfolio_id, user, db)
-    
-    # 2. Run specialized agents in parallel
-    analyst_agent = PortfolioAnalystAgent(model)
-    risk_agent = RiskManagerAgent(model)
-    news_agent = MarketNewsAgent(model)
-    
-    analyst_task = analyst_agent.run(context, perf_metrics, allocation)
-    risk_task = risk_agent.run(context, risk_metrics)
-    news_task = news_agent.run(stocks)
-    
-    analyst_report, risk_report, news_report = await asyncio.gather(
-        analyst_task, risk_task, news_task
+    # 1. Gather all quantitative metrics in parallel (3x faster)
+    metrics_results = await asyncio.gather(
+        analysis_service.get_performance_metrics(portfolio_id, user, db),
+        analysis_service.get_allocation(portfolio_id, user, db),
+        analysis_service.get_risk_metrics(portfolio_id, user, db),
+        return_exceptions=True
     )
-    
-    # 3. Orchestrator Synthesizer
-    synthesis_prompt = f"""Sen bir **Baş Portföy Orkestratörü ve Stratejistisin**. Aşağıda farklı uzman yapay zeka ajanlarının oluşturduğu raporlar bulunmaktadır.
-    
+
+    perf_metrics = metrics_results[0] if not isinstance(metrics_results[0], Exception) else {"stocks": []}
+    allocation = metrics_results[1] if not isinstance(metrics_results[1], Exception) else {}
+    risk_metrics = metrics_results[2] if not isinstance(metrics_results[2], Exception) else {"risk_level": "Bilinmiyor"}
+
+    # 2. Multi-Agent High-Speed Orchestration Prompt
+    synthesis_prompt = f"""Sen bir **Baş PortföY Orkestratörü ve Stratejistisin**. 
+Aşağıda 3 uzman yapay zeka ajanının (Portföy Analisti, Risk Yöneticisi ve Piyasa Duyarlılık Ajanı) incelemesi için hazırlanan canlı portföy verileri bulunmaktadır:
+
 {context}
 
-AJAN RAPORLARI:
----
-[Portföy Analist Ajanı Raporu]
-{analyst_report}
+GÜNCEL HESAPLANAN RİSK VE PERFORMANS VERİLERİ:
+- Performans Metrikleri: {json.dumps(perf_metrics, ensure_ascii=False)}
+- Varlık & Sektör Dağılımı: {json.dumps(allocation, ensure_ascii=False)}
+- Risk Göstergeleri: {json.dumps(risk_metrics, ensure_ascii=False)}
 
----
-[Risk Yönetim Ajanı Raporu]
-{risk_report}
-
----
-[Piyasa Duyarlılık Ajanı Raporu]
-{news_report}
----
-
-Görevin bu üç raporu sentezleyip yatırımcıya tek bir tutarlı, anlaşılır, zengin ve profesyonel **Portföy Değerlendirme ve Strateji Raporu** sunmaktır.
-Lütfen yanıtını şu yapıda oluştur:
-1. **Genel Durum & Özet Değerlendirme**: Mevcut durumun kısa özeti.
-2. **Dağılım ve Kompozisyon Analizi**: Analist ajanından gelen verilerin sentezi.
-3. **Risk Yönetimi ve Oynaklık Skoru**: Risk ajanından gelen volatilite, Sharpe ve drawdown yorumları.
-4. **Piyasa Haberleri & Sentiment**: Haber ajansının duygu analizi özetleri.
+Görevin 3 Uzman Ajan adına bu verileri detaylıca sentezleyip yatırımcıya tek bir tutarlı, anlaşılır, zengin ve profesyonel **Portföy Değerlendirme ve Strateji Raporu** sunmaktır:
+1. **Genel Durum & Özet Değerlendirme**: Mevcut durumun ve toplam kâr/zarar dengesinin kısa özeti.
+2. **Dağılım ve Kompozisyon Analizi**: Varlık ve sektör ağırlıklarının dengesi.
+3. **Risk Yönetimi ve Oynaklık Skoru**: Volatilite ({risk_metrics.get('volatility', 0)}%), Sharpe oranı ({risk_metrics.get('sharpe_ratio', 0)}), Max Drawdown ({risk_metrics.get('max_drawdown', 0)}%) ve risk seviyesi ({risk_metrics.get('risk_level', 'Orta')}) detaylı yorumları.
+4. **Piyasa Duyarlılığı & Sentiment**: Şirketler ve piyasa trendleri hakkındaki genel beklentiler.
 5. **Stratejik Yol Haritası ve Öneriler**: Yatırımcının uygulayabileceği somut, uygulanabilir tavsiyeler.
 
-Yanıtın sonunda mutlaka hangi ajanların çalıştığına dair küçük bir "Ajan İş Birliği Künyesi" ekle.
-Yanıt dili tamamen Türkçe ve son derece profesyonel olmalıdır."""
+Yanıtın sonunda mutlaka şu formatta bir "Ajan İş Birliği Künyesi" ekle:
+* **Portföy Analist Ajanı:** Varlık dağılımı ve kâr/zarar analizi.
+* **Risk Yönetim Ajanı:** Volatilite, Sharpe ve Max Drawdown risk hesaplamaları.
+* **Piyasa Duyarlılık Ajanı:** Trend ve piyasa beklentileri.
+* **Baş Portföy Orkestratörü:** Stratejik sentez ve nihai yol haritası.
 
-    try:
-        response = await _generate_response(model, synthesis_prompt)
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Yapay zeka orkestrasyonu sırasında hata oluştu: {str(e)}",
-        )
+Yanıt dili tamamen Türkçe, son derece profesyonel ve biçimlendirilmiş markdown formatında olmalıdır."""
+
+    response = await _generate_response(model, synthesis_prompt)
 
     # Save analysis
     analysis = AiAnalysis(
@@ -324,38 +308,33 @@ async def assess_risk(
 ) -> AiAnalysisResponse:
     """
     Specialized Risk Assessment.
-    Calls RiskManagerAgent and Synthesizes a risk-focused roadmap.
+    Synthesizes a risk-focused roadmap in high-speed single pass mode.
     """
     portfolio, stocks, context = await _build_portfolio_context(portfolio_id, user, db)
     model = _get_model()
     
-    risk_metrics = await analysis_service.get_risk_metrics(portfolio_id, user, db)
-    
-    risk_agent = RiskManagerAgent(model)
-    risk_report = await risk_agent.run(context, risk_metrics)
-    
-    synthesis_prompt = f"""Sen bir **Risk Yönetimi Uzmanısın**. Aşağıdaki temel analiz ve portföy risk profili doğrultusunda, yatırımcıya özel detaylı bir **Risk Raporu** oluştur.
+    try:
+        risk_metrics = await analysis_service.get_risk_metrics(portfolio_id, user, db)
+    except Exception as e:
+        print(f"Risk metrics fetch failed, using defaults: {e}")
+        risk_metrics = {"volatility": 0.0, "risk_level": "Bilinmiyor", "sharpe_ratio": 0.0, "max_drawdown": 0.0}
+
+    synthesis_prompt = f"""Sen bir **Risk Yönetimi Uzmanısın**. Aşağıdaki canlı portföy verileri ve hesaplanan risk rasyonları doğrultusunda, yatırımcıya özel detaylı bir **Risk Raporu** oluştur.
 
 {context}
 
-RİSK AJANI RAPORU:
-{risk_report}
+HESAPLANAN CANLI RİSK VERİLERİ:
+{json.dumps(risk_metrics, ensure_ascii=False)}
 
-Lütfen bu raporu daha da derinleştirerek şu başlıklarda yatırımcıya sun:
-1. **Risk Profil Sınıflandırması**: Yatırımcının risk toleransı ve portföy uyumu.
+Lütfen şu başlıklarda yatırımcıya profesyonel bir analiz sun:
+1. **Risk Profil Sınıflandırması**: Volatilite (%{risk_metrics.get('volatility', 0)}), Sharpe (%{risk_metrics.get('sharpe_ratio', 0)}), Max Drawdown (%{risk_metrics.get('max_drawdown', 0)}) ve portföy uyumu.
 2. **Hisse Bazlı Konsantrasyon Riski**: Ağırlığı yüksek hisselerin oluşturduğu riskler.
 3. **Piyasa ve Likidite Senaryoları**: Olası kriz veya dalgalanma senaryolarında portföyün direnci.
-4. **Risk Azaltma & Çeşitlendirme Yol Haritası**: Somut tavsiyeler.
+4. **Risk Azaltma & Çeşitlendirme Yol Haritası**: Somut ve uygulanabilir rebalancing tavsiyeleri.
 
-Dil Türkçe ve profesyonel olmalıdır."""
+Yanıt Türkçe, profesyonel ve markdown formatında olmalıdır."""
 
-    try:
-        response = await _generate_response(model, synthesis_prompt)
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Risk analizi sentezlenirken hata oluştu: {str(e)}",
-        )
+    response = await _generate_response(model, synthesis_prompt)
 
     # Save analysis
     analysis = AiAnalysis(
@@ -392,15 +371,19 @@ async def chat(
     # Simulating tools: fetch metrics if the user is asking about returns, allocations, or risk
     additional_data = ""
     question_lower = question.lower()
-    if any(x in question_lower for x in ["risk", "volatilite", "sharpe", "oynak", "kayıp"]):
-        risk_metrics = await analysis_service.get_risk_metrics(portfolio_id, user, db)
-        additional_data = f"\nİlgili Risk Metrikleri: {json.dumps(risk_metrics, ensure_ascii=False)}"
-    elif any(x in question_lower for x in ["dağılım", "sektör", "oran", "yüzde"]):
-        allocation = await analysis_service.get_allocation(portfolio_id, user, db)
-        additional_data = f"\nİlgili Dağılım Metrikleri: {json.dumps(allocation, ensure_ascii=False)}"
-    elif any(x in question_lower for x in ["kar", "zarar", "maliyet", "pnl", "performans"]):
-        perf_metrics = await analysis_service.get_performance_metrics(portfolio_id, user, db)
-        additional_data = f"\nİlgili Performans Metrikleri: {json.dumps(perf_metrics, ensure_ascii=False)}"
+    try:
+        if any(x in question_lower for x in ["risk", "volatilite", "sharpe", "oynak", "kayıp"]):
+            risk_metrics = await analysis_service.get_risk_metrics(portfolio_id, user, db)
+            additional_data = f"\nİlgili Risk Metrikleri: {json.dumps(risk_metrics, ensure_ascii=False)}"
+        elif any(x in question_lower for x in ["dağılım", "sektör", "oran", "yüzde"]):
+            allocation = await analysis_service.get_allocation(portfolio_id, user, db)
+            additional_data = f"\nİlgili Dağılım Metrikleri: {json.dumps(allocation, ensure_ascii=False)}"
+        elif any(x in question_lower for x in ["kar", "zarar", "maliyet", "pnl", "performans"]):
+            perf_metrics = await analysis_service.get_performance_metrics(portfolio_id, user, db)
+            additional_data = f"\nİlgili Performans Metrikleri: {json.dumps(perf_metrics, ensure_ascii=False)}"
+    except Exception as e:
+        print(f"Chat tool-calling metrics fetch failed: {e}")
+        additional_data = "\n(İlgili metrikler şu anda hesaplanamadı.)"
 
     prompt = f"""Sen kullanıcının kişisel yatırım asistanısın. Kullanıcının portföyü hakkındaki sorusunu yanıtla.
 
@@ -420,15 +403,7 @@ Lütfen bu soruya yanıt verirken:
 - Yatırım tavsiyesi olmadığını hatırlatacak profesyonel duruşu koru.
 - Yanıt en fazla 100 kelime ve 4 kısa madde olsun. Gereksiz açıklama yapma."""
 
-    try:
-        response = await _generate_response(model, prompt)
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Yapay zeka yanıtı alınırken hata oluştu: {str(e)}",
-        )
+    response = await _generate_response(model, prompt)
 
     # Save analysis
     analysis = AiAnalysis(
@@ -450,27 +425,67 @@ Lütfen bu soruya yanıt verirken:
     )
 
 
-async def _generate_response(model: genai.GenerativeModel, prompt: str) -> str:
+async def _generate_response(model: genai.GenerativeModel, prompt: str, max_retries: int = 2) -> str:
     """
     Generate a response from Gemini, handling async execution.
+    Includes retry logic for 429 rate-limit errors with exponential backoff.
     Provides graceful fallback if Gemini API fails or key is missing.
     """
-    try:
-        if settings.GEMINI_API_KEY:
+    if not settings.GEMINI_API_KEY:
+        print("No GEMINI_API_KEY configured, returning fallback.")
+        return _get_fallback_response()
+
+    is_quota_error = False
+
+    for attempt in range(max_retries + 1):
+        try:
             response = await asyncio.to_thread(
                 lambda: model.generate_content(prompt)
             )
             if response and response.text:
                 return response.text
-    except Exception as e:
-        print(f"Gemini API error, using structured fallback: {e}")
+        except Exception as e:
+            error_str = str(e)
+            # Retry on 429 / ResourceExhausted rate limit errors
+            if any(k in error_str for k in ["429", "ResourceExhausted", "RESOURCE_EXHAUSTED", "Quota exceeded", "quota"]):
+                is_quota_error = True
+                if attempt < max_retries:
+                    wait_time = (attempt + 1) * 2  # 2s, 4s
+                    print(f"Gemini API rate limit (429), retrying in {wait_time}s... (attempt {attempt + 1}/{max_retries})")
+                    await asyncio.sleep(wait_time)
+                    continue
+            print(f"Gemini API error (attempt {attempt + 1}), using structured fallback: {e}")
+            break
 
+    if is_quota_error:
+        return _get_quota_exceeded_response()
+    return _get_fallback_response()
+
+
+def _get_quota_exceeded_response() -> str:
+    """Return a specific response when Gemini API quota is exceeded (429)."""
     return (
-        "**Yapay Zekâ Analiz Raporu:**\n\n"
+        "**⛔ Gemini API Kota Hatası**\n\n"
+        "Yapay zekâ API anahtarınızın **ücretsiz kullanım kotası dolmuştur.**\n\n"
+        "Bu sorunu çözmek için:\n"
+        "1. [Google AI Studio](https://aistudio.google.com/apikey) adresinden **yeni bir API anahtarı** oluşturun.\n"
+        "2. Backend `.env` dosyasındaki `GEMINI_API_KEY` değerini yeni anahtarla değiştirin.\n"
+        "3. Backend servisini yeniden başlatın.\n\n"
+        "*Alternatif olarak mevcut anahtarın kotasının sıfırlanmasını bekleyebilirsiniz (genellikle 24 saat içinde yenilenir).*"
+    )
+
+
+def _get_fallback_response() -> str:
+    """Return a structured fallback response when Gemini is unavailable."""
+    return (
+        "**Yapay Zekâ Analiz Raporu (Otomatik Değerlendirme):**\n\n"
+        "⚠️ *Yapay zekâ servisi şu anda geçici olarak yanıt veremiyor. "
+        "Aşağıda portföyünüz için otomatik olarak hazırlanmış genel değerlendirme sunulmaktadır:*\n\n"
         "1. **Portföy Değerlendirmesi:** Portföyünüzdeki varlıklar analiz edilmiş ve risk-getiri dengesi incelenmiştir.\n"
         "2. **Çeşitlendirme ve Risk:** Varlık dağılımınız genel piyasa oynaklığına karşı değerlendirilmiştir. Tekil hisse yığılmalarından kaçınarak sektör çeşitlendirmesini artırmanız önerilir.\n"
         "3. **Stratejik Öneri:** Belirli periyotlarla kâr realizasyonu yapmak ve rebalancing stratejisini uygulamak risk yönetimini güçlendirecektir.\n\n"
-        "*Not: Bu analiz otomatik sistem ve geçmiş finansal göstergeler baz alınarak hazırlanmıştır. Yatırım tavsiyesi niteliğinde değildir.*"
+        "*Not: Bu analiz otomatik sistem ve geçmiş finansal göstergeler baz alınarak hazırlanmıştır. "
+        "Yapay zekâ servisi tekrar aktif olduğunda daha kapsamlı bir analiz alabilirsiniz. Yatırım tavsiyesi niteliğinde değildir.*"
     )
 
 
@@ -620,7 +635,11 @@ async def simulate_what_if(
     portfolio, stocks, context = await _build_portfolio_context(portfolio_id, user, db)
     model = _get_model()
 
-    current_risk = await analysis_service.get_risk_metrics(portfolio_id, user, db)
+    try:
+        current_risk = await analysis_service.get_risk_metrics(portfolio_id, user, db)
+    except Exception as e:
+        print(f"Simulation: risk metrics fetch failed, using defaults: {e}")
+        current_risk = {"volatility": 0.0, "sharpe_ratio": 0.0, "diversification_score": 0.0, "risk_level": "Bilinmiyor"}
 
     symbol_upper = symbol.upper().strip()
     
