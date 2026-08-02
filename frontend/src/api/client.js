@@ -7,7 +7,7 @@ const client = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000,
+  timeout: 120000, // 2 minutes timeout for Multi-Agent AI responses
 });
 
 // Request interceptor - attach JWT token
@@ -49,10 +49,17 @@ client.interceptors.response.use(
       });
     }
 
+    if (error.code === 'ECONNABORTED') {
+      return Promise.reject({
+        status: 408,
+        message: 'İstek zaman aşımına uğradı. Yapay zeka analizi biraz uzun sürdü, lütfen tekrar deneyin.',
+      });
+    }
+
     if (error.request) {
       return Promise.reject({
         status: 0,
-        message: 'Sunucuya bağlanılamıyor. Lütfen internet bağlantınızı kontrol edin.',
+        message: 'Sunucuya bağlanılamıyor. Lütfen internet bağlantınızı ve sunucuyu kontrol edin.',
       });
     }
 

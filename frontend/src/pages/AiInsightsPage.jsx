@@ -151,7 +151,7 @@ export default function AiInsightsPage() {
       addToast({
         type: 'error',
         title: 'Hata',
-        message: err.response?.data?.detail || 'Simülasyon yapılırken hata oluştu.',
+        message: err.message || err.response?.data?.detail || 'Simülasyon yapılırken hata oluştu.',
       });
     } finally {
       setIsSimulating(false);
@@ -172,7 +172,7 @@ export default function AiInsightsPage() {
       addToast({
         type: 'error',
         title: 'Hata',
-        message: err.response?.data?.detail || 'Analiz yapılırken hata oluştu.',
+        message: err.message || err.response?.data?.detail || 'Analiz yapılırken hata oluştu.',
       });
     } finally {
       setIsAnalyzing(false);
@@ -193,7 +193,7 @@ export default function AiInsightsPage() {
       addToast({
         type: 'error',
         title: 'Hata',
-        message: err.response?.data?.detail || 'Risk analizi yapılırken hata oluştu.',
+        message: err.message || err.response?.data?.detail || 'Risk analizi yapılırken hata oluştu.',
       });
     } finally {
       setIsRiskAnalyzing(false);
@@ -239,7 +239,7 @@ export default function AiInsightsPage() {
       addToast({
         type: 'error',
         title: 'Hata',
-        message: err.response?.data?.detail || 'Raporlar karşılaştırılırken hata oluştu.',
+        message: err.message || err.response?.data?.detail || 'Raporlar karşılaştırılırken hata oluştu.',
       });
     } finally {
       setIsComparing(false);

@@ -40,7 +40,20 @@ async def get_risk(
     db: AsyncSession = Depends(get_db)
 ):
     """Get portfolio risk metrics such as volatility, Sharpe ratio, max drawdown, and diversification score."""
-    return await analysis_service.get_risk_metrics(portfolio_id, current_user, db)
+    try:
+        return await analysis_service.get_risk_metrics(portfolio_id, current_user, db)
+    except Exception as e:
+        print(f"Risk metrics endpoint error: {e}")
+        return {
+            "portfolio_name": "",
+            "volatility": 0.0,
+            "beta": 0.0,
+            "sharpe_ratio": 0.0,
+            "max_drawdown": 0.0,
+            "diversification_score": 0.0,
+            "risk_level": "Hesaplanamadı",
+            "stock_risks": [],
+        }
 
 
 @router.get("/benchmark")
@@ -51,7 +64,11 @@ async def get_benchmark(
     db: AsyncSession = Depends(get_db)
 ):
     """Compare portfolio performance history against a benchmark index."""
-    return await analysis_service.get_benchmark_comparison(portfolio_id, benchmark, current_user, db)
+    try:
+        return await analysis_service.get_benchmark_comparison(portfolio_id, benchmark, current_user, db)
+    except Exception as e:
+        print(f"Benchmark comparison endpoint error: {e}")
+        return {"dates": [], "portfolio_returns": [], "benchmark_returns": [], "benchmark": benchmark}
 
 
 @router.get("/snapshots")
