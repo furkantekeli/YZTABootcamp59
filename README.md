@@ -19,19 +19,23 @@ Bu proje, **Yapay Zeka ve Teknoloji Akademisi (YZTA) Mezuniyet Bootcamp'i 2026**
 ## 🎯 Ürün Detayları
 
 ### Ürün İsmi
+
 **YatırımZekası**
 
 ### Ürün Açıklaması
+
 Geleneksel portföy takip uygulamaları sadece sayısal veriler ve basit kâr/zarar oranları sunar. Yatırımcıların en büyük problemi, bu verilerin arkasındaki anlamı kavrayamamak ve piyasadaki karmaşık gelişmelerin portföylerine etkisini kestirememektir.
 
 **YatırımZekası**, borsa yatırımlarınızı anlık olarak takip etmenizi sağlarken, arka planda çalışan **Çoklu Yapay Zeka Ajanları (Multi-Agent System)** sayesinde portföyünüzün varlık dağılımını, oynaklığını (volatilite), Sharpe oranını ve güncel finansal haberlerin duyarlılık analiziyle birleştirerek size özel stratejik yatırım analiz raporları üretir.
 
 ### Hedef Kitle
+
 * **Bireysel Yatırımcılar:** Borsada işlem yapan ve portföy durumunu tek bir yerden takip etmek isteyenler.
 * **Finansal Okuryazarlığını Artırmak İsteyenler:** AI rehberliğinde risk yönetimi prensiplerini öğrenmek isteyen başlangıç/orta düzey yatırımcılar.
 * **Zaman Tasarrufu Arayanlar:** Finansal haberleri tek tek okumak yerine, yapay zekanın haber sentiment özetini portföy etkisine göre incelemesini isteyenler.
 
 ### Ürün Özellikleri
+
 * **Kullanıcı Yönetimi:** Güvenli JWT tabanlı kayıt ve giriş sistemi.
 * **Portföy Takibi:** Hisse ekleme/çıkarma, ortalama maliyet hesaplama.
 * **İşlem Kayıtları:** Alım-satım geçmişi, gerçekleşen/gerçekleşmemiş P&L hesapları.
@@ -49,9 +53,9 @@ Bu bölümde, projemizdeki Yapay Zeka (AI) model seçimi, Prompt Mühendisliği 
 
 ### 1. Model Seçimi ve Gerekçelendirilmesi
 
-#### Tercih Edilen Model: `gemini-3.1-flash-lite`
+#### Tercih Edilen Model: `gemini-3.5-flash-lite`
 
-Projemizde Google Gemini model ailesinden **Gemini 3.1 Flash Lite** modeli tercih edilmiştir. Bu tercihin gerekçeleri şunlardır:
+Projemizde Google Gemini model ailesinden **Gemini 3.5 Flash Lite** modeli tercih edilmiştir. Bu tercihin gerekçeleri şunlardır:
 
 1. **Yüksek Limit ve Kota Dayanıklılığı:** Ücretsiz plan (Free Tier) kapsamında dakikada 15 istek sınırı sunarak, ajan tabanlı eşzamanlı sistemlerde günlük kota tıkanıklığını (kısıtlamalarını) tamamen aşmıştır.
 2. **Hız ve Düşük Gecikme Süresi (Latency):** Flash Lite mimarisi, yüksek işlem hızı sayesinde kullanıcılara gerçek zamanlı sohbet ve hızlı portföy analizi deneyimi sunar.
@@ -119,6 +123,19 @@ Kullanıcının chat ekranındaki deneyimini iyileştirmek ve bağlam kopukluğu
 
 Ajanlarımızın portföy verilerine dinamik olarak erişebilmesi için backend servis fonksiyonları birer araç (tool) gibi sisteme entegre edilmiştir. Kullanıcının sorusu analiz edilerek; risk, performans veya dağılım verileri otomatik olarak hesaplanıp ajanın prompt'una ek bilgi (`additional_data`) olarak eklenir.
 
+### 5. Yüksek Hızlı Ajan Orkestrasyonu & Sistem Kararlılığı (4x Hızlanma)
+
+Projede yapay zekâ analiz yanıt sürelerini ve sistem kararlılığını artırmak amacıyla aşağıdaki kritik altyapı iyileştirmeleri uygulanmıştır:
+
+1. **Paralel Veri Çekimi Mimarisi (`asyncio.gather`):**
+   * Portföyün performans, varlık/sektör dağılımı ve risk göstergeleri önceden sırayla çekilirken, `asyncio.gather` ile eşzamanlı çekilerek veri toplama süresi 3 kat hızlandırılmıştır.
+2. **Tek Geçişli Çoklu Ajan Sentezi (Single-Pass Multi-Agent Orchestration):**
+   * Ajanların sırayla 4 ayrı LLM turu yapması yerine, hesaplanan nicel veriler ve ajan uzmanlıkları doğrudan yüksek hızlı tek tur sentez mimarisine geçirilmiştir. Bu sayede analiz üretme süresi **20 saniyeden 3 saniyeye** düşürülmüştür.
+3. **BIST Hisse Sembol Desteği (`.IS` Fallback Engine):**
+   * Borsa İstanbul hisseleri (`THYAO` ➔ `THYAO.IS`) otomatik algılanarak Yahoo Finance üzerinden 255 günlük fiyat geçmişi ve sektör verileri tam doğrulukla çekilmektedir.
+4. **Robust Finansal Matematik & NaN Temizleme:**
+   * Finansal veri akışındaki tatil ve kapalı günlerden kaynaklanan `NaN` verileri filtreler ile temizlenerek Volatilite, Sharpe Oranı, Beta, Max Drawdown ve Çeşitlendirme skorlarının sayısal kararlılığı garanti altına alınmış, JSON hataları engellenmiştir.
+
 ---
 
 ## 📋 Product Backlog
@@ -130,6 +147,7 @@ Ajanlarımızın portföy verilerine dinamik olarak erişebilmesi için backend 
 * Sprint 1 Hedefi: **301 puan** (Tüm projenin tamamlanması)
 
 ### Epic 1: Altyapı & Kurulum 🏗️
+
 * **US-006: Docker ile Proje Altyapısı Kurulumu (21 Puan)**
   * **Task 1:** Backend için FastAPI `Dockerfile` yazılması.
   * **Task 2:** Frontend için React `Dockerfile` yazılması.
@@ -148,6 +166,7 @@ Ajanlarımızın portföy verilerine dinamik olarak erişebilmesi için backend 
   * **Task 2:** İsteklerde JWT token'ı otomatik ekleyen Axios interceptor yazılması.
 
 ### Epic 2: Kullanıcı Yönetimi 👤
+
 * **US-001: Kullanıcı Kayıt Sistemi (8 Puan)**
   * **Task 1:** `/auth/register` API endpoint'inin ve şema doğrulamalarının yazılması.
   * **Task 2:** Şifre güvenliği için bcrypt ile hashing işleminin yapılması.
@@ -157,6 +176,7 @@ Ajanlarımızın portföy verilerine dinamik olarak erişebilmesi için backend 
   * **Task 2:** React giriş sayfası geliştirilmesi ve token'ın localStorage'da saklanması.
 
 ### Epic 3: Portföy Yönetimi 📊
+
 * **US-003: Portföye Hisse Ekleme/Çıkarma (13 Puan)**
   * **Task 1:** `/portfolio/stocks` POST/DELETE endpoint'lerinin yazılması.
   * **Task 2:** yfinance üzerinden eklenen hissenin doğruluğunun teyit edilmesi.
@@ -172,6 +192,7 @@ Ajanlarımızın portföy verilerine dinamik olarak erişebilmesi için backend 
   * **Task 2:** ApexCharts Donut/Pie grafik entegrasyonunun yapılması.
 
 ### Epic 4: İşlem Yönetimi 💰
+
 * **US-011: Alım-Satım İşlem Kayıtları (13 Puan)**
   * **Task 1:** `/transactions` POST/GET API endpoint'lerinin yazılması.
   * **Task 2:** Alım ve satım işlemlerinin lot/fiyat doğrulamalarının yapılması.
@@ -184,6 +205,7 @@ Ajanlarımızın portföy verilerine dinamik olarak erişebilmesi için backend 
   * **Task 1:** İşlem yapıldıkça portföydeki hisselerin ortalama maliyetlerini güncelleyen fonksiyonun yazılması.
 
 ### Epic 5: Grafikler & Analiz 📈
+
 * **US-013: Candlestick Fiyat Grafikleri (13 Puan)**
   * **Task 1:** Hisse bazlı 1 yıllık fiyat geçmişini yfinance'tan çeken API.
   * **Task 2:** ApexCharts Candlestick grafik bileşeninin entegrasyonu.
@@ -193,6 +215,7 @@ Ajanlarımızın portföy verilerine dinamik olarak erişebilmesi için backend 
   * **Task 3:** Arayüzde risk seviyesinin gösterilmesi (Düşük/Orta/Yüksek).
 
 ### Epic 6: Yapay Zeka & AI 🧠
+
 * **US-010: AI ile Kapsamlı Portföy Analizi (21 Puan)**
   * **Task 1:** Google Gemini entegrasyonunun backend'e eklenmesi.
   * **Task 2:** Analiz prompt şablonunun Türkçe olarak hazırlanması.
@@ -206,6 +229,7 @@ Ajanlarımızın portföy verilerine dinamik olarak erişebilmesi için backend 
   * **Task 1:** Kullanıcı sorusuna göre risk, performans veya dağılım verilerini sorgulayan dinamik veri ekleme mantığı.
 
 ### Epic 7: Haber & Bilgi 📰
+
 * **US-022: RSS ve yfinance Finans Haberleri (8 Puan)**
   * **Task 1:** Bloomberg HT, Dünya ve Investing.com Türkçe RSS akışlarının parse edilmesi.
   * **Task 2:** yfinance üzerinden hisse bazlı haberlerin çekilmesi.
@@ -214,6 +238,7 @@ Ajanlarımızın portföy verilerine dinamik olarak erişebilmesi için backend 
   * **Task 1:** Haber başlığı ve özetlerini Gemini ile tarayıp Pozitif/Negatif/Nötr skoru üreten fonksiyonun yazılması.
 
 ### Epic 8: Finalizasyon 🎯
+
 * **US-025: Arayüz İyileştirmeleri ve Tasarım (8 Puan)**
   * **Task 1:** HSL renk paletleri ve modern karanlık mod stil düzenlemeleri.
   * **Task 2:** Micro-animation'lar ve buton hover efektleri.
@@ -225,6 +250,7 @@ Ajanlarımızın portföy verilerine dinamik olarak erişebilmesi için backend 
 ## 🌀 Sprint 1 Değerlendirme Raporu
 
 ### 1. Backlog Düzeni ve Story Seçimleri
+
 * **Puanlama Mantığı:** Projedeki tüm Epic'ler ve kullanıcı hikayeleri 4 günlük yoğun bir sprint dönemine dağıtılmıştır. Fibonacci puanlama (1, 2, 3, 5, 8, 13, 21) kullanılmıştır.
 * **Tahmini Toplam Puan:** 301 Puan
 * **Tamamlanan Puan:** 301 Puan
@@ -270,6 +296,7 @@ Ajanlarımızın portföy verilerine dinamik olarak erişebilmesi için backend 
 * **Cavit Furkan Tekeli:** Görüşürüzz 🙋‍♂️
 
 ### 3. Sprint Board SS
+
 Aşağıda Sprint 1 sonundaki tamamlanmış Sprint Board (Scrum Board) yer almaktadır:
 
 ![Sprint Board](ProjectManagement/Sprint1Documents/sprint_board.png)
@@ -277,24 +304,31 @@ Aşağıda Sprint 1 sonundaki tamamlanmış Sprint Board (Scrum Board) yer almak
 ### 4. Ürün Durumu SS (Ekran Görüntüleri)
 
 #### A. Gösterge Paneli (Dashboard)
+
 ![Gösterge Paneli](ProjectManagement/Sprint1Documents/dashboard_page_clean.png)
 
 #### B. Portföy Yönetim Ekranı
+
 ![Portföy Ekranı](ProjectManagement/Sprint1Documents/portfolio_page_clean.png)
 
 #### C. İşlem Takip Ekranı (Transactions)
+
 ![İşlemler](ProjectManagement/Sprint1Documents/transactions_page.png)
 
 #### D. Varlık Dağılımı ve Performans Grafikleri
+
 ![Dağılım Grafikleri](ProjectManagement/Sprint1Documents/analysis_charts.png)
 
 #### E. Kâr/Zarar ve Gelişmiş Risk Metrikleri
+
 ![Risk Analizi](ProjectManagement/Sprint1Documents/analysis_risk.png)
 
 #### F. AI Yorumları ve Asistan Ekranı (Gemini Multi-Agent)
+
 ![AI Yorumları](ProjectManagement/Sprint1Documents/ai_insights_page.png)
 
 #### G. Finansal Haberler ve Sentiment Analizi
+
 ![Haberler](ProjectManagement/Sprint1Documents/news_page.png)
 
 ### 5. Sprint Review
@@ -327,12 +361,14 @@ Aşağıda Sprint 1 sonundaki tamamlanmış Sprint Board (Scrum Board) yer almak
 ## 🌀 Sprint 2 Değerlendirme Raporu
 
 ### 1. Backlog Düzeni ve Story Seçimleri (Puanlama Mantığı)
+
 Sprint 2 kapsamında eklenen yenilikçi ve vizyoner finansal/yapay zekâ özellikleri, öncelik ve karmaşıklıklarına göre Fibonacci puanlama yöntemiyle puanlanarak iş takibine eklenmiştir.
 
 * **Tahmini Toplam Puan:** 97 Puan
 * **Tamamlanan Puan:** 97 Puan
 
 #### Kullanıcı Hikayeleri ve Görev Dağılımı:
+
 * **US-027: AI Streaming Response (Canlı Sohbet) (8 Puan)**
   * *Task (Halit):* SSE tabanlı kelime akışı, yanıp sönen cursor, durdurma butonu ve tüm chat arayüzünün sıfırdan geliştirilmesi.
 * **US-028: Fiyat Değişim Alarmları (Price Alerts) (13 Puan)**
@@ -375,12 +411,12 @@ Sprint 2 kapsamında eklenen yenilikçi ve vizyoner finansal/yapay zekâ özelli
 
 * **Cevahir Atıcı:** Demodan önceki son toplantımız. Kalan işler bitti mi?
 * **Halit:** Evet arkadaşlar, tüm sayfaları teslim ettim. What-If Simülasyon ekranını, AI Rebalancing sapma tablolarını ve Rapor Karşılaştırma arayüzünü checkbox seçimleriyle tamamen arayüze bağladım. Modallerin yerleşiminde sticky header kaynaklı kırpılma (clipping) hatasını da React Portalları ile kalıcı olarak çözdüm. Görsel pürüzler giderildi, responsive testlerini de yaptım. Sunuma tamamen hazırız.
-* **Cavit Furkan Tekeli:** Selam. Ben de AI rebalancing motorunu ve geçmiş rapor kıyaslama servislerini tamamlayıp test ettim. Halit'in portallı modal çözümü ve arayüzdeki optimizasyon tabloları projenin vizyonunu tamamen değiştirdi.
-* **Cevahir Atıcı:** Çok iyi iş çıkardınız arkadaşlar, özellikle Halit'in insanüstü eforu sayesinde bu sprinti rekor sürede kapattık. Tüm kabul testleri (QA) başarıyla geçti, demoya hazırız.
+* **Cevahir Atıcı:** Çok iyi iş çıkardınız arkadaşlar, tüm kabul testleri (QA) başarıyla geçti, demoya hazırız.
 
 ---
 
 ### 3. Sprint Board SS
+
 Aşağıda Sprint 2 sonundaki tamamlanmış Sprint Board (Scrum Board) yer almaktadır:
 
 ![Sprint Board](ProjectManagement/Sprint2Documents/sprint_board.png)
@@ -390,38 +426,47 @@ Aşağıda Sprint 2 sonundaki tamamlanmış Sprint Board (Scrum Board) yer almak
 ### 4. Ürün Durumu SS (Ekran Görüntüleri)
 
 #### A. Yapay Zekâ Canlı Sohbet (Streaming Chat & Stop Button)
+
 ![Yapay Zekâ Canlı Sohbet](ProjectManagement/Sprint2Documents/ai_chat_streaming.png)
 
 #### B. İzleme Listesi (Watchlist) & Hızlı Portföye Ekleme
+
 ![İzleme Listesi](ProjectManagement/Sprint2Documents/watchlist_page.png)
 
 #### C. Fiyat Değişim Alarmları (Price Alerts)
+
 ![Fiyat Alarmları](ProjectManagement/Sprint2Documents/price_alerts_page.png)
 
 #### D. Benchmark Karşılaştırma & Tarihsel Performans Zaman Serisi
+
 ![Portföy Benchmark Analizi 1](ProjectManagement/Sprint2Documents/benchmark_analysis_1.png)
 ![Portföy Benchmark Analizi 2](ProjectManagement/Sprint2Documents/benchmark_analysis_2.png)
 ![Portföy Benchmark Analizi 3](ProjectManagement/Sprint2Documents/benchmark_analysis_3.png)
 
 #### E. Hipotetik "What-If" Simülasyonu
+
 ![What-If Simülasyonu](ProjectManagement/Sprint2Documents/what_if_simulation.png)
 
 #### F. Yapay Zekâ Dengeleme Önerileri (AI Rebalancing)
+
 ![Yapay Zekâ Rebalancing](ProjectManagement/Sprint2Documents/ai_rebalancing.png)
 
 #### G. Rapor Geçmişi Karşılaştırmalı Gelişim Raporu
+
 ![Rapor Karşılaştırma 1](ProjectManagement/Sprint2Documents/report_comparison_1.png)
 ![Rapor Karşılaştırma 2](ProjectManagement/Sprint2Documents/report_comparison_2.png)
 
 ---
 
 ### 5. Sprint Review
+
 * **Katılımcılar:** Halit Kılıç (Scrum Master), Cevahir Atıç (Product Owner), Cavit Furkan Tekeli (Developer)
 * **Değerlendirme:** Sprint 2 hedeflerinin tamamı başarıyla yerine getirilmiştir. Canlı sohbet akışı, dengeleme (rebalancing), simülasyon ve alarm mekanizmaları entegre edilmiş, tüm modüller başarıyla test edilmiştir.
 
 ---
 
 ### 6. Sprint Retrospective
+
 * **İyi Giden Yönler:**
   * Gemini modelinin veri hızı ve SSE performansı beklentilerin üzerinde gerçekleşti.
   * React Portallarının kullanımı, popover/modal render hatalarını kalıcı olarak çözdü.
@@ -431,20 +476,29 @@ Aşağıda Sprint 2 sonundaki tamamlanmış Sprint Board (Scrum Board) yer almak
   * Sunucudan veri alınamadığı durumlarda kullanıcıya hata göstermek yerine yapay veriler (fail-safe fallback data) üreten algoritmalar mimariye kazandırıldı.
 
 ---
+
 ## 🌀 Sprint 3 Değerlendirme Raporu
 
 ### 1. Backlog Düzeni ve Story Seçimleri (Puanlama Mantığı)
 
-Sprint 3 kapsamında yapay zekâ yatırım asistanının kullanıcı deneyimini geliştirmeye yönelik iyileştirmeler gerçekleştirilmiştir. Mevcut AI sohbet altyapısı yeniden kullanılarak, kullanıcının uygulamanın herhangi bir sayfasından yatırım asistanına hızlıca ulaşabilmesi sağlanmıştır.
+Sprint 3 kapsamında ürünün kullanıcı karşılama deneyimini üst seviyeye taşımak amacıyla modern ve dinamik bir **Landing Page (Karşılama ve Ürün Tanıtım Sayfası)** geliştirilmiş, yapay zekâ yatırım asistanının tüm sayfalardan tek tıkla erişilebilirliğini sağlayan **Floating AI Asistanı** entegre edilmiş ve yapay zekâ analizlerinin performansını 4 kat hızlandıran **Single-Pass Multi-Agent Orkestrasyonu** ile borsa veri kararlılığı sağlanmıştır.
 
 Görevler öncelik ve teknik karmaşıklıklarına göre Fibonacci puanlama yöntemiyle değerlendirilmiştir.
 
-* **Tahmini Toplam Puan:** 16 Puan
-* **Tamamlanan Puan:** 16 Puan
+* **Tahmini Toplam Puan:** 37 Puan
+* **Tamamlanan Puan:** 37 Puan
 
 #### Kullanıcı Hikayeleri ve Görev Dağılımı
 
+* **US-034: Modern ve Dinamik Ürün Tanıtım Sayfası / Landing Page (13 Puan)**
+
+  * Uygulamanın amacını, yapay zekâ yeteneklerini ve portföy takip özelliklerini kullanıcılara tanıtan modern, responsive ve dinamik karşılama sayfasının tasarlanması (`LandingPage.jsx` & `LandingPage.css`).
+  * `App.jsx` üzerindeki yönlendirme (routing) mimarisinin ilk girişte Landing Page gösterecek şekilde yapılandırılması.
+  * Hızlı kayıt/giriş çağrı (CTA) butonları ve etkileşimli ürün tanıtım bölümlerinin entegrasyonu.
+  * Mobil ve masaüstü cihazlara tam uyumlu responsive grid düzenlemeleri.
+
 * **US-035: Sayfalar Arası Erişilebilir Floating AI Asistanı (8 Puan)**
+
   * Uygulamanın sağ alt köşesinde sabit olarak bulunan AI Asistan butonunun geliştirilmesi.
   * Mevcut `AiChat` bileşeninin floating panel içerisinde yeniden kullanılması.
   * Kullanıcının aktif portföy bilgisinin asistana otomatik olarak aktarılması.
@@ -452,51 +506,72 @@ Görevler öncelik ve teknik karmaşıklıklarına göre Fibonacci puanlama yön
   * Panelin mobil ve masaüstü ekranlara uyumlu hale getirilmesi.
 
 * **US-036: Gemini API ve AI Servis Kararlılığı (5 Puan)**
-  * Gemini model yapılandırmasının güncellenmesi.
+
+  * Gemini model yapılandırmasının güncellenmesi (`gemini-3.5-flash-lite`).
   * Gemini API anahtarının backend ortam değişkenleri üzerinden tanımlanması.
   * Frontend ve backend arasındaki AI mesajlaşma bağlantısının test edilmesi.
   * Yapay zekâ yanıtı alınamadığında oluşan hata mesajlarının incelenmesi ve giderilmesi.
 
 * **US-037: AI Yanıt Uzunluğunun Optimize Edilmesi (3 Puan)**
+
   * Sohbet promptlarına maksimum yanıt uzunluğu kuralının eklenmesi.
   * Yanıtların en fazla 100 kelime ve 4 kısa madde olacak şekilde sınırlandırılması.
   * Gereksiz ve uzun finansal açıklamaların azaltılması.
   * Kullanıcıya daha okunabilir ve hızlı anlaşılabilir cevaplar sunulması.
 
+* **US-038: AI Analiz Performansı, BIST `.IS` Uyumluluğu & Finansal Veri Kararlılığı (8 Puan)**
+
+  * AI analiz yanıt sürelerinin 20 saniyeden **3 saniyeye** düşürülmesi (4 kat performans artışı).
+  * Metrik çekim süreçlerinin `asyncio.gather` ile paralelleştirilmesi ve tek geçişli çoklu ajan sentez mimarisinin kurulması.
+  * Borsa İstanbul (`.IS`) hisselerinin fiyat geçmişi ve sektör verilerinin otomatik algılanıp yfinance üzerinden sorunsuz çekilmesi.
+  * Kapalı borsa günlerinden doğan `NaN` (boş veri) hatalarının temizlenerek risk metrikleri ve benchmark grafik çöküşlerinin kalıcı olarak engellenmesi.
+  * `RiskMeter` arayüz göstergesi üzerindeki metin hizalama ve görsel çakışma hatalarının giderilmesi.
+
 ---
 
 ### 2. Daily Scrum (Günlük Toplantı Notları)
 
-#### Gün 1
+![Daily Scrum WhatsApp Yazışması 1](ProjectManagement/Sprint3Documents/daily_scrum_1.png)
+![Daily Scrum WhatsApp Yazışması 2](ProjectManagement/Sprint3Documents/daily_scrum_2.png)
+![Daily Scrum WhatsApp Yazışması 3](ProjectManagement/Sprint3Documents/daily_scrum_3.png)
+![Daily Scrum WhatsApp Yazışması 4](ProjectManagement/Sprint3Documents/daily_scrum_4.png)
+![Daily Scrum WhatsApp Yazışması 5](ProjectManagement/Sprint3Documents/daily_scrum_5.png)
+![Daily Scrum WhatsApp Yazışması 6](ProjectManagement/Sprint3Documents/daily_scrum_6.png)
+![Daily Scrum WhatsApp Yazışması 7](ProjectManagement/Sprint3Documents/daily_scrum_7.png)
+![Daily Scrum WhatsApp Yazışması 8](ProjectManagement/Sprint3Documents/daily_scrum_8.png)
 
-* **Cevahir Atıcı:** Kullanıcının AI sayfasına her seferinde menüden geçmek zorunda kalmadan yatırım asistanına ulaşabilmesi gerektiğini belirledim. Sağ alt köşede açılır bir AI sohbet paneli oluşturulmasına karar verildi.
-* **Halit Kılıç:** Mevcut `AiChat` bileşenini tekrar kullanacak floating panel tasarımına başladım. Panelin dashboard içeriğini kapatmaması ve modern tasarımla uyumlu olması önceliklendirildi.
-* **Cavit Furkan Tekeli:** Backend tarafındaki mevcut AI chat endpointlerini kontrol ettim. Yeni bir endpoint geliştirmek yerine mevcut servislerin kullanılabileceği doğrulandı.
+#### Gün 1 (24 Temmuz Cuma)
 
-#### Gün 2
+* **Cavit Furkan Tekeli:** Arkadaşlar selam. Ürünümüz için bir landing page yaptım, githuba pushladım. Ancak 3. sprint için nasıl bir dosya oluşturmam gerekiyor bilmiyorum. O konuda destek olabilirseniz çok sevinirim.
+* **Cevahir Atıcı:** Eee hani bana da yazacaktın beraber yapcaktık daha süre vardı.
+* **Cavit Furkan Tekeli:** Sadece landing page yaptım, proje açıldığında direkt login ekranıyla başlıyordu ürün hissiyatı vermiyordu. İstersen sende müsait olduğunda bak eklemek istediğin bir şey varsa ürüne veya landing page'e ekleme yap. 3. sprinti de tamamlamış olalım. Sonrasında Sprint3Documents oluşturulur.
+* **Halit Kılıç (Scrum Master):** Kanka sprinti README'ye 3. Sprint diye başlık atıp alt kısmına yapılması gereken şeyleri eklemek lazım, önceki sprintlerde yazıldığı gibi. Daha 10 gün var biraz daha geliştirebiliriz boş kaldıkça. Bir de bootcamp yayınlarında ürününüzü canlıya almalısınız demişlerdi, en önemlilerden biri de buymuş.
+* **Cavit Furkan Tekeli:** Tüm eklemelerden sonra oluşturalım o zaman. Canlıya alacaksak 2 Ağustos'a bırakmadan halledelim :)
+* **Halit Kılıç (Scrum Master):** Tamamdır, hafta içi bakmaya çalışırım ben de. Biraz daha inceleyip gerekli bir şey varsa ekleyelim.
 
-* **Cevahir Atıcı:** Floating AI panelinin ilk kullanıcı testlerini gerçekleştirdim. Panelin açılması ve mesaj gönderme işlemi çalıştı ancak Gemini servisinden yanıt alınırken hata oluştu.
-* **Cavit Furkan Tekeli:** Gemini model yapılandırması ve API anahtarı kontrol edildi. Backend ortam değişkenleri yeniden tanımlanarak AI servisi tekrar çalıştırıldı.
-* **Halit Kılıç:** Asistan paneline kapatma ve tam ekran AI analiz sayfasına geçiş butonlarını ekledim. Aktif portföy adının panel başlığında gösterilmesini sağladım.
+#### Gün 2 (25 - 26 Temmuz)
 
-#### Gün 3
+* **Cevahir Atıcı:** Arkadaşlar, Sprint 3 kapsamında floating AI yatırım asistanını ekledim. Projeyi de ücretsiz şekilde (Render & Neon PostgreSQL) canlıya aldım. `yatirimzekasi.onrender.com` canlı linkini README'ye ekledim. Ücretsiz Render sunucusu 15 dakika kullanılmayınca uykuya geçer, ilk işlem yaklaşık 1 dakika bekletebilir.
+* **Halit Kılıç (Scrum Master):** Elinize sağlık arkadaşlar, canlıya alınması süper oldu!
+* **Cevahir Atıcı & Cavit Furkan Tekeli:** Herkesin eline sağlık 🙏
 
-* **Cevahir Atıcı:** AI asistana portföy riski, kâr/zarar ve çeşitlendirme soruları sorularak kabul testleri gerçekleştirildi.
-* **Halit Kılıç:** Panelin responsive görünümü, mesaj alanı ve sağ alt köşe konumlandırması kontrol edildi.
-* **Cavit Furkan Tekeli:** Yapay zekânın çok uzun yanıt vermemesi için promptlara maksimum 100 kelime ve 4 kısa madde sınırı eklendi.
-* **Cevahir Atıcı:** Tüm testlerin başarıyla tamamlanmasının ardından Sprint 3 ürün ekran görüntüleri hazırlandı.
+#### Gün 3 (2 Ağustos Pazar - Finalizasyon & Teslimat)
+
+* **Halit Kılıç (Scrum Master):** Arkadaşlar bugün son gün olduğu için README'de olması gereken bazı eksiklikleri ekledim ve güncelleme yaptım. AI analiz tarafındaki bekleme süresini hallettim (20 saniyeden 3 saniyeye düşürdüm). BIST (THYAO vb.) hisse veri çekme sorununu ve borsa kapalı günlerden doğan `NaN` kilitlenme hatalarını çözdüm. Risk ibresindeki yazı çakışmasını düzelttim. README ve Sprint 3 raporunu Trello ile güncelledim.
+* **Cavit Furkan Tekeli:** Eline sağlık Halit. Sanırım henüz push etmedin değil mi? Sprint 3 ana sayfa eklemesi de yapıldı, onu da eklersek eksik kalmamış oluyor. Umarım ürünü doğru yansıtan bir anlatım olmuştur :)
+* **Halit Kılıç (Scrum Master):** Şimdi yapacağım kanka, sizin yaptıklarınızla beraber hepsini güzel bir şekilde uygun hale getireceğim. Teslim için tanıtım videosunu da hazırlayıp son güncellemeleri tamamlayacağım.
 
 ---
 
 ### 3. Sprint Board SS
 
-Aşağıda Sprint 3 sonundaki tamamlanmış Sprint Board yer almaktadır:
+Aşağıda Sprint 3 sonundaki tamamlanmış Sprint Board (Scrum Board) yer almaktadır:
 
-
+![Sprint Board](ProjectManagement/Sprint3Documents/sprint_board.png)
 
 ---
 
-### 3. Ürün Durumu SS (Ekran Görüntüleri)
+### 4. Ürün Durumu SS (Ekran Görüntüleri)
 
 #### A. Dashboard Üzerinde Floating AI Asistanı
 
@@ -510,48 +585,66 @@ AI Asistan, kullanıcının aktif portföy bilgilerini kullanarak kâr/zarar, ri
 
 ![Portföye Özel AI Sohbet](ProjectManagement/Sprint3Documents/b.png)
 
+#### C. Karşılama ve Ürün Tanıtım Sayfası (Landing Page)
+
+Uygulamanın amacını, çoklu yapay zekâ ajanı mimarisini, canlı borsa ve risk takip özelliklerini kullanıcılara tanıtan modern, responsive ve dinamik karşılama ekranları.
+
+##### 1. Hero Bölümü (Karşılama Ekranı ve Ana Başlık)
+![Landing Page Hero](ProjectManagement/Sprint3Documents/landing_hero.png)
+
+##### 2. Neden YatırımZekası? (Platform Avantajları)
+![Neden YatırımZekası](ProjectManagement/Sprint3Documents/landing_why.png)
+
+##### 3. Öne Çıkan Temel Özellikler (Canlı Portföy & Borsa Takibi)
+![Temel Özellikler](ProjectManagement/Sprint3Documents/landing_features.png)
+
+##### 4. Çoklu Yapay Zekâ Ajanları Mimarisi (Ajan Orkestrasyonu)
+![Yapay Zekâ Ajan Mimarisi](ProjectManagement/Sprint3Documents/landing_agents.png)
+
+##### 5. Sıkça Sorulan Sorular (SSS) ve Kayıt Çağrı Butonları
+![SSS ve Çağrı Butonları](ProjectManagement/Sprint3Documents/landing_faq.png)
+
 ---
 
 ### 5. Sprint Review
 
 * **Katılımcılar:** Halit Kılıç (Scrum Master), Cevahir Atıcı (Product Owner), Cavit Furkan Tekeli (Developer)
-
-* **Değerlendirme:** Sprint 3 kapsamında mevcut yapay zekâ sohbet sistemi daha erişilebilir hale getirilmiştir. Kullanıcıların uygulamanın farklı sayfalarından ayrılmadan AI yatırım asistanına ulaşabilmesi sağlanmıştır. Asistan, aktif portföy verilerini kullanarak kullanıcı sorularına kişiselleştirilmiş cevaplar verebilmektedir.
-
+* **Değerlendirme:** Sprint 3 kapsamında hem kullanıcı karşılama deneyimi modern bir Landing Page ile üst seviyeye taşınmış hem de yapay zekâ yatırım asistanı tüm sayfalardan tek tıkla erişilebilir (Floating AI Assistant) hale getirilmiştir. Bununla birlikte, çoklu yapay zekâ analizlerinin yanıt süreleri 20 saniyeden **3 saniyeye** indirilmiş, BIST hisselerinin veri uyumluluğu sağlanmış ve kapalı gün verilerinden kaynaklanan `NaN` hataları temizlenerek sistem kararlılığı en üst düzeye çıkarılmıştır.
 * **Sprint 3'te Tamamlanan İşler:**
-  * ✅ Sağ alt köşede açılır Floating AI Asistan butonu
-  * ✅ Mevcut AI chat altyapısının floating panelde kullanılması
-  * ✅ Aktif portföy bilgisinin asistana aktarılması
-  * ✅ Tam ekran AI sayfasına geçiş butonu
-  * ✅ Gemini API bağlantısının yapılandırılması
-  * ✅ AI hata durumlarının giderilmesi
-  * ✅ Yanıtların maksimum 100 kelimeyle sınırlandırılması
-  * ✅ Responsive ve modern sohbet paneli tasarımı
-  * ✅ Portföye özel risk, kâr/zarar ve dağılım sorularının test edilmesi
+
+  * ✅ Modern, responsive ve dinamik Landing Page tasarlanıp entegre edildi (`LandingPage.jsx` & `LandingPage.css`)
+  * ✅ `App.jsx` yönlendirme mimarisi ilk girişte Landing Page gösterecek şekilde yapılandırıldı
+  * ✅ Sağ alt köşede açılır Floating AI Asistan butonu eklendi
+  * ✅ Aktif portföy bilgisi asistana otomatik aktarılarak kişiselleştirilmiş sohbet sağlandı
+  * ✅ Gemini API yapılandırması `gemini-3.5-flash-lite` olarak güncellendi ve kota kararlılığı sağlandı
+  * ✅ **Yüksek Hızlı AI Orkestrasyonu:** Analiz bekleme süreleri 20 saniyeden **3 saniyeye** düşürüldü (4x performans artışı)
+  * ✅ **BIST Hisse Uyumluluğu (`.IS` Fallback Engine):** Borsa İstanbul hisselerinin fiyat geçmişi ve sektör verilerinin otomatik çekilmesi sağlandı
+  * ✅ **Robust Finansal Matematik & NaN Temizliği:** Tatil ve kapalı borsa günlerinden kaynaklanan `NaN` hataları temizlenerek risk metrikleri ve benchmark grafik 500 hataları kalıcı olarak çözüldü
+  * ✅ **UI/UX Polishing:** `RiskMeter` arayüz göstergesi üzerindeki metin hizalamaları ve görsel çakışmalar düzeltildi
 
 ---
 
 ### 6. Sprint Retrospective
 
 * **İyi Giden Yönler:**
-  * Mevcut `AiChat` bileşeninin yeniden kullanılması geliştirme süresini önemli ölçüde azalttı.
-  * Floating panel sayesinde kullanıcıların AI asistanına erişim süreci kolaylaştırıldı.
-  * Aktif portföy bilgisinin otomatik kullanılması, AI yanıtlarının kişiselleştirilmesini sağladı.
-  * Gemini API bağlantısı başarıyla yapılandırıldı.
-  * Prompt uzunluğu sınırı sayesinde daha kısa ve okunabilir cevaplar elde edildi.
+  * Modern Landing Page tasarımı sayesinde uygulamanın profesyonel ilk izlenimi ve kullanıcı karşılama kalitesi üst seviyeye taşındı.
+  * Floating AI Asistanı modüler `AiChat` altyapısı sayesinde tüm sayfalara pürüzsüz entegre edildi.
+  * Halit Kılıç (Scrum Master) liderliğinde gerçekleştirilen AI analiz optimizasyonu ve veri paralelleştirmesi (`asyncio.gather`), kullanıcı bekleme sürelerini 20 saniyeden 3 saniyeye indirerek kullanıcı deneyimini muazzam ölçüde artırdı.
+  * BIST hisselerine `.IS` otomatik tamamlama desteği kazandırılarak yerli borsa yatırımcılarının portföy analizleri kesintisiz hale getirildi.
 
 * **İyileştirilmesi Gereken Yönler:**
-  * AI servis hataları başlangıçta kullanıcıya yalnızca genel bir hata mesajı olarak gösterildi.
-  * API anahtarlarının her terminal oturumunda tekrar tanımlanması geliştirme sürecini yavaşlattı.
-  * Sohbet paneli içerisinde çok uzun AI cevaplarının görünümü kullanıcı deneyimini olumsuz etkiledi.
+  * yfinance API'sinden çekilen tarihsel verilerde haftasonu/tatil günlerinden kaynaklanan `NaN` (boş) veriler finansal rasyonlarda geçici grafik çöküşlerine sebep oldu. Finansal matematik motoruna sıkı sanitasyon filtreleri eklendi.
+  * Çoklu ajan mimarisindeki ardışık LLM çağrıları kullanıcıda bekleme hissi yarattığı için tek geçişli orkestrasyon mimarisine geçiş zorunlu görüldü ve uygulandı.
 
 * **Alınan Aksiyonlar:**
-  * AI promptlarına maksimum 100 kelime ve 4 kısa madde sınırı eklendi.
-  * Gemini API anahtarının kalıcı olarak `.env` dosyası üzerinden yönetilmesine karar verildi.
-  * Backend hata mesajlarının daha açıklayıcı hale getirilmesi sonraki geliştirme planına eklendi.
-  * Floating AI panelinin farklı ekran boyutlarında responsive testleri tamamlandı.
+  * Portföy risk, performans ve dağılım metriklerinin çekilmesi `asyncio.gather` ile paralelleştirildi.
+  * Gemini orkestrasyonu tek geçişli yüksek hızlı sentez modeline geçirildi ve model `gemini-3.5-flash-lite` olarak sabitlendi.
+  * BIST hisselerinin `.IS` uyumluluğu ve `NaN` veri sanitasyonu `calculations.py` ile `analysis_service.py` katmanlarına entegre edildi.
+  * `RiskMeter` bileşeninde visual text-clipping düzeltmesi yapıldı.
+  * Landing Page ve Floating AI panelinin tüm cihaz boyutlarındaki kabul ve responsive testleri başarıyla tamamlandı.
 
 ---
+
 ## 🌐 Canlı Demo
 
 🚀 **[YatırımZekası Uygulamasını Aç](https://yatirimzekasi.onrender.com)**
@@ -566,5 +659,5 @@ AI Asistan, kullanıcının aktif portföy bilgilerini kullanarak kâr/zarar, ri
 ---
 
 ---
-**⚠️ Yasal Uyarı:** Bu uygulama yatırım tavsiyesi vermez. Yapay zekâ tarafından üretilen yorumlar bilgilendirme amaçlıdır ve yatırım kararı olarak değerlendirilmemelidir.
 
+**⚠️ Yasal Uyarı:** Bu uygulama yatırım tavsiyesi vermez. Yapay zekâ tarafından üretilen yorumlar bilgilendirme amaçlıdır ve yatırım kararı olarak değerlendirilmemelidir.
