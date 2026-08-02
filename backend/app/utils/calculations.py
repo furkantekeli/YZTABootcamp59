@@ -136,15 +136,17 @@ def calculate_volatility(price_history: list[float]) -> float:
     Returns:
         Annualized volatility as a percentage, or 0 if insufficient data.
     """
-    if len(price_history) < 2:
+    clean_prices = [p for p in price_history if p is not None and not math.isnan(p)]
+    if len(clean_prices) < 2:
         return 0.0
 
     # Calculate daily returns
     returns = []
-    for i in range(1, len(price_history)):
-        if price_history[i - 1] > 0:
-            daily_return = (price_history[i] - price_history[i - 1]) / price_history[i - 1]
-            returns.append(daily_return)
+    for i in range(1, len(clean_prices)):
+        if clean_prices[i - 1] > 0:
+            daily_return = (clean_prices[i] - clean_prices[i - 1]) / clean_prices[i - 1]
+            if not math.isnan(daily_return):
+                returns.append(daily_return)
 
     if not returns:
         return 0.0
@@ -152,11 +154,15 @@ def calculate_volatility(price_history: list[float]) -> float:
     # Standard deviation of returns
     mean_return = sum(returns) / len(returns)
     variance = sum((r - mean_return) ** 2 for r in returns) / len(returns)
+    if variance < 0 or math.isnan(variance):
+        return 0.0
+
     daily_volatility = math.sqrt(variance)
 
     # Annualize (252 trading days)
     annualized_volatility = daily_volatility * math.sqrt(252)
-    return round(annualized_volatility * 100, 2)
+    res = round(annualized_volatility * 100, 2)
+    return 0.0 if math.isnan(res) else res
 
 
 def calculate_sharpe_ratio(
@@ -172,14 +178,17 @@ def calculate_sharpe_ratio(
     Returns:
         Sharpe ratio, or 0 if insufficient data.
     """
-    if len(returns) < 2:
+    clean_returns = [r for r in returns if r is not None and not math.isnan(r)]
+    if len(clean_returns) < 2:
         return 0.0
 
-    mean_return = sum(returns) / len(returns)
-    variance = sum((r - mean_return) ** 2 for r in returns) / len(returns)
-    std_dev = math.sqrt(variance)
+    mean_return = sum(clean_returns) / len(clean_returns)
+    variance = sum((r - mean_return) ** 2 for r in clean_returns) / len(clean_returns)
+    if variance <= 0 or math.isnan(variance):
+        return 0.0
 
-    if std_dev == 0:
+    std_dev = math.sqrt(variance)
+    if std_dev == 0 or math.isnan(std_dev):
         return 0.0
 
     # Annualize
@@ -187,7 +196,8 @@ def calculate_sharpe_ratio(
     annualized_std = std_dev * math.sqrt(252)
 
     sharpe = (annualized_return - risk_free_rate) / annualized_std
-    return round(sharpe, 2)
+    res = round(sharpe, 2)
+    return 0.0 if math.isnan(res) else res
 
 
 def calculate_max_drawdown(price_history: list[float]) -> float:
@@ -200,20 +210,22 @@ def calculate_max_drawdown(price_history: list[float]) -> float:
     Returns:
         Maximum drawdown as a negative percentage, or 0 if insufficient data.
     """
-    if len(price_history) < 2:
+    clean_prices = [p for p in price_history if p is not None and not math.isnan(p)]
+    if len(clean_prices) < 2:
         return 0.0
 
-    peak = price_history[0]
+    peak = clean_prices[0]
     max_dd = 0.0
 
-    for price in price_history:
+    for price in clean_prices:
         if price > peak:
             peak = price
         drawdown = (price - peak) / peak if peak > 0 else 0
         if drawdown < max_dd:
             max_dd = drawdown
 
-    return round(max_dd * 100, 2)
+    res = round(max_dd * 100, 2)
+    return 0.0 if math.isnan(res) else res
 
 
 def calculate_diversification_score(allocations: list[float]) -> float:
@@ -229,15 +241,16 @@ def calculate_diversification_score(allocations: list[float]) -> float:
     Returns:
         Diversification score between 0 and 100.
     """
-    if not allocations:
+    clean_allocs = [w for w in allocations if w is not None and not math.isnan(w)]
+    if not clean_allocs:
         return 0.0
 
-    n = len(allocations)
+    n = len(clean_allocs)
     if n == 1:
         return 0.0
 
     # HHI = sum of squared weights
-    hhi = sum(w ** 2 for w in allocations)
+    hhi = sum(w ** 2 for w in clean_allocs)
 
     # Minimum HHI for n assets = 1/n, maximum = 1.0
     min_hhi = 1.0 / n
@@ -248,4 +261,5 @@ def calculate_diversification_score(allocations: list[float]) -> float:
 
     # Normalize to 0-100 (lower HHI = better diversification)
     score = ((max_hhi - hhi) / (max_hhi - min_hhi)) * 100
-    return round(max(0.0, min(100.0, score)), 2)
+    res = round(max(0.0, min(100.0, score)), 2)
+    return 0.0 if math.isnan(res) else res

@@ -3,6 +3,7 @@ Analysis service: performance metrics, allocation, and risk assessment.
 """
 
 import asyncio
+import math
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -163,13 +164,18 @@ async def get_allocation(
     sector_map: dict[str, float] = {}
 
     async def _get_sector(symbol: str, value: float):
-        try:
-            ticker = await asyncio.to_thread(lambda: yf.Ticker(symbol))
-            info = await asyncio.to_thread(lambda: ticker.info)
-            sector = info.get("sector", "Bilinmiyor")
-        except Exception:
-            sector = "Bilinmiyor"
-        return sector, value
+        def _sync():
+            try:
+                t = yf.Ticker(symbol)
+                info = t.info
+                if (not info or info.get("sector") is None) and "." not in symbol:
+                    t = yf.Ticker(f"{symbol}.IS")
+                    info = t.info
+                sector = info.get("sector", "Bilinmiyor") if info else "Bilinmiyor"
+            except Exception:
+                sector = "Bilinmiyor"
+            return sector, value
+        return await asyncio.to_thread(_sync)
 
     tasks = [
         _get_sector(sv["symbol"], sv["market_value"])
@@ -226,13 +232,17 @@ async def get_risk_metrics(
     stock_histories: dict[str, list[float]] = {}
 
     async def _fetch_history(symbol: str):
-        try:
-            ticker = await asyncio.to_thread(lambda: yf.Ticker(symbol))
-            hist = await asyncio.to_thread(lambda: ticker.history(period="1y"))
-            closes = hist["Close"].tolist() if not hist.empty else []
-            return symbol, closes
-        except Exception:
-            return symbol, []
+        def _sync():
+            try:
+                t = yf.Ticker(symbol)
+                h = t.history(period="1y")
+                if (h is None or h.empty) and "." not in symbol:
+                    t = yf.Ticker(f"{symbol}.IS")
+                    h = t.history(period="1y")
+                return symbol, h["Close"].tolist() if (h is not None and not h.empty) else []
+            except Exception:
+                return symbol, []
+        return await asyncio.to_thread(_sync)
 
     tasks = [_fetch_history(s.symbol) for s in stocks]
     results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -285,10 +295,12 @@ async def get_risk_metrics(
                 daily_return = 0.0
                 for stock, weight_val in zip(stocks, weights):
                     closes = stock_histories.get(stock.symbol, [])
-                    if len(closes) > i and closes[i - 1] > 0:
+                    if len(closes) > i and closes[i - 1] > 0 and not math.isnan(closes[i]) and not math.isnan(closes[i - 1]):
                         stock_return = (closes[i] - closes[i - 1]) / closes[i - 1]
-                        daily_return += stock_return * weight_val
-                portfolio_returns.append(daily_return)
+                        if not math.isnan(stock_return):
+                            daily_return += stock_return * weight_val
+                if not math.isnan(daily_return):
+                    portfolio_returns.append(daily_return)
 
     # ─── Calculate true Beta against BIST-100 index (XU100.IS) ───
     beta_val = 0.0
@@ -301,8 +313,10 @@ async def get_risk_metrics(
         
         if len(benchmark_closes) > 1:
             for i in range(1, len(benchmark_closes)):
-                if benchmark_closes[i - 1] > 0:
-                    benchmark_returns.append((benchmark_closes[i] - benchmark_closes[i - 1]) / benchmark_closes[i - 1])
+                if benchmark_closes[i - 1] > 0 and not math.isnan(benchmark_closes[i]) and not math.isnan(benchmark_closes[i - 1]):
+                    ret = (benchmark_closes[i] - benchmark_closes[i - 1]) / benchmark_closes[i - 1]
+                    if not math.isnan(ret):
+                        benchmark_returns.append(ret)
             
             # Align length of returns
             min_ret_len = min(len(portfolio_returns), len(benchmark_returns))
@@ -317,8 +331,9 @@ async def get_risk_metrics(
                 covariance = sum((p - mean_p) * (b - mean_b) for p, b in zip(p_rets, b_rets)) / min_ret_len
                 variance_b = sum((b - mean_b) ** 2 for b in b_rets) / min_ret_len
                 
-                if variance_b > 0:
-                    beta_val = round(covariance / variance_b, 2)
+                if variance_b > 0 and not math.isnan(variance_b):
+                    calc_beta = covariance / variance_b
+                    beta_val = 0.0 if math.isnan(calc_beta) else round(calc_beta, 2)
     except Exception:
         pass
 
@@ -348,11 +363,11 @@ async def get_risk_metrics(
 
     return {
         "portfolio_name": portfolio.name,
-        "volatility": round(portfolio_vol, 2),
-        "beta": beta_val,
-        "sharpe_ratio": sharpe,
-        "max_drawdown": max_dd,
-        "diversification_score": div_score,
+        "volatility": 0.0 if math.isnan(portfolio_vol) else round(portfolio_vol, 2),
+        "beta": 0.0 if math.isnan(beta_val) else beta_val,
+        "sharpe_ratio": 0.0 if math.isnan(sharpe) else sharpe,
+        "max_drawdown": 0.0 if math.isnan(max_dd) else max_dd,
+        "diversification_score": 0.0 if math.isnan(div_score) else div_score,
         "risk_level": risk_level,
         "stock_risks": stock_risks,
     }
@@ -378,14 +393,19 @@ async def get_benchmark_comparison(
     # Fetch daily price histories for last 30 trading days to construct trend series
     stock_histories = {}
     async def _fetch_history(symbol: str):
-        try:
-            ticker = await asyncio.to_thread(lambda: yf.Ticker(symbol))
-            hist = await asyncio.to_thread(lambda: ticker.history(period="1mo"))
-            closes = hist["Close"].tolist() if not hist.empty else []
-            dates = [d.strftime("%Y-%m-%d") for d in hist.index] if not hist.empty else []
-            return symbol, closes, dates
-        except Exception:
-            return symbol, [], []
+        def _sync():
+            try:
+                t = yf.Ticker(symbol)
+                h = t.history(period="1mo")
+                if (h is None or h.empty) and "." not in symbol:
+                    t = yf.Ticker(f"{symbol}.IS")
+                    h = t.history(period="1mo")
+                closes = h["Close"].tolist() if (h is not None and not h.empty) else []
+                dates = [d.strftime("%Y-%m-%d") for d in h.index] if (h is not None and not h.empty) else []
+                return symbol, closes, dates
+            except Exception:
+                return symbol, [], []
+        return await asyncio.to_thread(_sync)
 
     # Fetch portfolio stock histories
     tasks = [_fetch_history(s.symbol) for s in stocks]
@@ -440,27 +460,35 @@ async def get_benchmark_comparison(
     for i in range(1, len(dates_list)):
         # Calculate daily change for benchmark
         b_change = 0.0
-        if len(benchmark_closes) > i and benchmark_closes[i - 1] > 0:
-            b_change = (benchmark_closes[i] - benchmark_closes[i - 1]) / benchmark_closes[i - 1]
+        if len(benchmark_closes) > i and benchmark_closes[i - 1] > 0 and not math.isnan(benchmark_closes[i]) and not math.isnan(benchmark_closes[i - 1]):
+            calc_b = (benchmark_closes[i] - benchmark_closes[i - 1]) / benchmark_closes[i - 1]
+            if not math.isnan(calc_b):
+                b_change = calc_b
 
         # Calculate daily change for portfolio
         p_change = 0.0
         for stock, weight_val in zip(stocks, weights):
-            if stock.symbol in stock_histories:
-                closes, dates = stock_histories[stock.symbol]
-                # Find matching date index or close relative
-                if len(closes) > i and closes[i - 1] > 0:
-                    s_change = (closes[i] - closes[i - 1]) / closes[i - 1]
+            closes = stock_histories.get(stock.symbol, ([], []))[0]
+            if not closes and "." not in stock.symbol:
+                closes = stock_histories.get(f"{stock.symbol}.IS", ([], []))[0]
+
+            if len(closes) > i and closes[i - 1] > 0 and not math.isnan(closes[i]) and not math.isnan(closes[i - 1]):
+                s_change = (closes[i] - closes[i - 1]) / closes[i - 1]
+                if not math.isnan(s_change):
                     p_change += s_change * weight_val
 
         # Calculate cumulative returns
-        p_val = portfolio_daily_history_value[-1] * (1 + p_change)
+        safe_p_change = 0.0 if math.isnan(p_change) else p_change
+        p_val = portfolio_daily_history_value[-1] * (1 + safe_p_change)
         portfolio_daily_history_value.append(p_val)
-        portfolio_cum_returns.append(round(p_val - 100.0, 2))
+        p_cum = round(p_val - 100.0, 2)
+        portfolio_cum_returns.append(0.0 if math.isnan(p_cum) else p_cum)
 
-        b_val = benchmark_daily_history_value[-1] * (1 + b_change)
+        safe_b_change = 0.0 if math.isnan(b_change) else b_change
+        b_val = benchmark_daily_history_value[-1] * (1 + safe_b_change)
         benchmark_daily_history_value.append(b_val)
-        benchmark_cum_returns.append(round(b_val - 100.0, 2))
+        b_cum = round(b_val - 100.0, 2)
+        benchmark_cum_returns.append(0.0 if math.isnan(b_cum) else b_cum)
 
     return {
         "dates": dates_list,
